@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.js"></script>
+    <script src="js/lib.js"></script>
+    <script src="js/underscore.min.js"></script>
+    <script src="js/popup.js"></script>
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.css" rel="stylesheet" media="screen">
+    <link href="css/popup.css" rel="stylesheet" media="screen">
+
+</head>
+<body>
+<script type="text/html" id='show_running'>
+    <div class="panel panel-default">
+
+        <!-- Default panel contents -->
+        <div class="panel-heading">Background requests</div>
+        <div class="panel-body">
+            <p>Currently running background requests</p>
+        </div>
+        <table class="table running_procs">
+            <thead>
+            <tr>
+
+                <th class="rp_rule">Rule</th>
+                <th class="rp_uri">BG Uri</th>
+                <th class="rp_count">Counter</th>
+                <th class="rp_end">End</th>
+            </tr>
+            </thead>
+            <tbody>
+</script>
+<script type="text/html" id="end_template">
+    </tbody>
+    </table>
+    </div>
+</script>
+
+<div class="container" id="popup_ui">
+
+    <a href="#" class="mysettings">Settings</a> <button id="pop_close" class="myclose"><span></span></button>
+    <div id="popup_ui_main">
+    </div>
+
+
+</div>
+</body>
+</html>

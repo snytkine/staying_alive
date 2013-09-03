@@ -1,0 +1,74 @@
+/**
+* Generator of css/popup.css
+*/
+@import "../css/bootstrap/less/variables.less";
+@import "../css/bootstrap/less/badges.less";
+@import "../css/bootstrap/less/mixins.less";
+@import "../css/bootstrap/less/buttons.less";
+@import "../css/bootstrap/less/glyphicons.less";
+@import "../css/bootstrap/less/utilities.less";
+
+a.settings {
+  .btn;
+  .btn-primary;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+a.mysettings {
+  .btn;
+  .btn-primary;
+  margin-bottom: .5em;
+}
+
+
+button.myclose{
+  .btn;
+  .btn-default;
+  .pull-right;
+  margin-bottom: .5em;
+}
+
+button.myclose > span {
+  .glyphicon;
+  .glyphicon-remove;
+}
+
+.th_width(@width) {
+  width: @width;
+}
+
+table.running_procs thead > tr {
+  th.rp_count,
+  th:last-child {
+    .th_width(3%);
+  }
+}
+
+table.running_procs tbody tr {
+  td:first-child span.badge {
+    background-color: @brand-primary;
+  }
+}
+
+span.counter {
+  .badge;
+  background-color: @brand-primary;
+}
+
+#popup_ui {
+  min-width: 470px;
+}
+
+.cancel_rule {
+  .btn;
+  .btn-danger;
+  .btn-xs;
+}
+
+button.cancel_rule > span {
+  .glyphicon;
+  .glyphicon-remove;
+}
+
+
