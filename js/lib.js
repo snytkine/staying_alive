@@ -105,6 +105,12 @@ String.prototype.endsWithDomain = function (s) {
     return this.indexOf(s, this.length - s.length) !== -1;
 }
 
+if (typeof String.prototype.endsWith !== 'function') {
+    String.prototype.endsWith = function(suffix) {
+        return this.indexOf(suffix, this.length - suffix.length) !== -1;
+    };
+}
+
 
 function getStoredItem() {
     try {

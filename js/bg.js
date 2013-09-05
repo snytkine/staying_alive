@@ -207,6 +207,34 @@ var removeCookie = function (details, name) {
 }
 
 /**
+ * Remove cache related headers from response
+ * If cache control headers are not removed
+ * the ajax request may use cached data and not
+ * issue request to server.
+ * This will break the request loop
+ * because only a successful response for rule uri
+ * schedules a new response
+ * 
+ * @param details
+ */
+var removeCacheHeaders = function(details){
+    var removed = 0;
+
+    details.responseHeaders.forEach(function (v, i, a) {
+        if (v.name == "Expires" || v.name == "Last-Modified" || v.name == "Cache-Control" || v.name == "Etag") {
+            d("Removing cache header: " + v.name);
+            details.responseHeaders.splice(i, 1);
+            removed++;
+        }
+    });
+
+    if(removed > 0){
+        d("Removed " + removed + " Cache control headers");
+    }
+}
+
+
+/**
  * This function is called from tab and also from background page
  * if called from tab then attempt to
  * add new RunningRule to runningProcs object
@@ -269,12 +297,12 @@ var removeRunningRule = function (oRule) {
     chrome.browserAction.setBadgeText({text: counter.toString()});
 }
 
-var removeRullingRuleByHash = function(hash){
+var removeRullingRuleByHash = function (hash) {
     if (null === hash || (typeof hash !== 'string')) {
         throw new Error("hash param passed to removeRullingRuleByHash was not a string. :: " + (typeof hash));
     }
 
-    if(runningProcs.hashMap.hasOwnProperty(hash)){
+    if (runningProcs.hashMap.hasOwnProperty(hash)) {
         delete(runningProcs.hashMap[hash]);
     }
 
@@ -306,7 +334,7 @@ var updateCallInProgress = function (oRule, details) {
  * @param rule
  */
 var scheduleRule = function (rule) {
-
+    d("309 in scheduleRule()");
     var hash = rule.hashCode();
 
     d("WILL START rule: " + hash + " IN " + rule.getInterval() + " minute(s)");
@@ -321,7 +349,9 @@ var scheduleRule = function (rule) {
             $.ajax({
                 url: uri
                 //,headers: {"X-Test-Header": "test-value"}
-            });
+            }).done(function() { d("success"); })
+                .fail(function() { d("error"); })
+                .always(function() { d("complete"); });
         } else {
             d("RULE for " + hash + " IS NOT SCHEDULE TO RUN");
         }
@@ -330,8 +360,9 @@ var scheduleRule = function (rule) {
          * add extra 0 to interval multiplier
          * right now it will be 1/10 of a minute,
          * in production we want interval to be in minutes!
+         * @debug change me to 60000
          */
-    }, (rule.getInterval() * 60000))
+    }, (rule.getInterval() * 30000))
 
 }
 
@@ -394,7 +425,7 @@ var initbgpage = function (reload) {
 
     var requestListener = function (details) {
 
-        var oRule, url = details.url.toLocaleLowerCase();
+        var myHref, oUri, views, view, oRule, url = details.url.toLocaleLowerCase();
 
         /**
          * Remove ccn cookie if request is mylog
@@ -409,6 +440,22 @@ var initbgpage = function (reload) {
             oRule = getDomainRuleForUri(url);
 
             if (oRule) {
+                views = chrome.extension.getViews();
+                console.log("TOTAL VIEWS: " + views.length);
+                for (var i = 0; i < views.length; i++) {
+                    view = views[i];
+                    myHref = view.location.href;
+                    console.log("View: " + view);
+                    console.log("View href: " + view.location.href);
+                    d("IS popup.html: " + myHref.endsWith("popup.html"));
+                    if (myHref.endsWith("popup.html")) {
+                        //view.document.getElementById("popup_ui_main").innerHTML = "<p>HELLO FROM BACKGROUND</p>";
+                        view.showAlert("Hello from the background");
+                    }
+                    //View href: chrome-extension://gedhildfbncohbnfpolpiohkhmgccajo/popup.html
+
+                }
+
 
                 /**
                  * If result matches rule
@@ -431,6 +478,7 @@ var initbgpage = function (reload) {
                 d('tabId  : ' + details.tabId);
 
                 d('responseHeaders: ' + printHeaders(details.responseHeaders));
+                removeCacheHeaders(details);
                 // new
                 /**
                  * If call NOT from tab (from background script)
@@ -477,6 +525,8 @@ var initbgpage = function (reload) {
                     addToCallsInProgress(oRule, details.tabId);
                 }
 
+            } else {
+                //d("NO RULE FOUND FOR url: " + url);
             }
         }
 
