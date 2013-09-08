@@ -7,6 +7,7 @@
 @import "../css/bootstrap/less/buttons.less";
 @import "../css/bootstrap/less/glyphicons.less";
 @import "../css/bootstrap/less/utilities.less";
+@import "../css/bootstrap/less/close.less";
 
 a.settings {
   .btn;
@@ -21,8 +22,7 @@ a.mysettings {
   margin-bottom: .5em;
 }
 
-
-button.myclose{
+button.myclose {
   .btn;
   .btn-default;
   .pull-right;
@@ -43,6 +43,15 @@ table.running_procs thead > tr {
   th:last-child {
     .th_width(3%);
   }
+
+  th.rp_int,
+  th.rp_next {
+    .th_width(20%);
+  }
+
+  th:first-child {
+    .th_width(50%);
+  }
 }
 
 table.running_procs tbody tr {
@@ -57,7 +66,10 @@ span.counter {
 }
 
 #popup_ui {
-  min-width: 470px;
+  min-width: 490px;
+  padding-right: 5px !important;
+  padding-left: 5px !important;
+  margin-top: 5px !important;
 }
 
 .cancel_rule {
@@ -69,6 +81,43 @@ span.counter {
 button.cancel_rule > span {
   .glyphicon;
   .glyphicon-remove;
+}
+
+span.rule_name {
+  border-bottom-color: @gray-light !important;
+  border-bottom-style: dashed !important;
+  border-bottom-width: 1px !important;
+  a{
+    color: @gray;
+    &:hover{
+      text-decoration: none;
+    }
+  }
+}
+
+#my_header {
+  padding: 5px;
+  background: black;
+  min-height: 38px;
+  a.my_settings {
+    position: absolute;
+    color: white;
+    text-decoration: none;
+    margin-left: 4px;
+    margin-top: 4px;
+    :hover {
+      text-decoration: none;
+    }
+  }
+
+  button.my_close {
+    .close;
+    opacity: 0.9;
+  }
+}
+
+.tooltip-inner {
+  max-width: none !important;
 }
 
 

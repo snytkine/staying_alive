@@ -1,12 +1,4 @@
 /**
- * Created with JetBrains PhpStorm.
- * User: admin
- * Date: 2/28/13
- * Time: 8:09 PM
- * To change this template use File | Settings | File Templates.
- */
-
-/**
  * Some Logic:
  * If request url is on the list then:
 
@@ -202,7 +194,6 @@ var removeCookie = function (details, name) {
 
     if (removed) {
         d("removed " + name + " cookie");
-        //details.responseHeaders.push({name: "ditto", value: "done"});
     }
 }
 
@@ -214,10 +205,10 @@ var removeCookie = function (details, name) {
  * This will break the request loop
  * because only a successful response for rule uri
  * schedules a new response
- * 
+ *
  * @param details
  */
-var removeCacheHeaders = function(details){
+var removeCacheHeaders = function (details) {
     var removed = 0;
 
     details.responseHeaders.forEach(function (v, i, a) {
@@ -228,7 +219,7 @@ var removeCacheHeaders = function(details){
         }
     });
 
-    if(removed > 0){
+    if (removed > 0) {
         d("Removed " + removed + " Cache control headers");
     }
 }
@@ -249,7 +240,7 @@ var addToCallsInProgress = function (oRule, fromTabId) {
 
     var counter = runningProcs.size();
     if (runningProcs.hasRule(oRule) && !fromTabId) {
-        d("187 already have this rule in RunningProcs");
+        d("There is  already the same rule in RunningProcs");
         scheduleRule(oRule);
         return true;
     }
@@ -297,9 +288,9 @@ var removeRunningRule = function (oRule) {
     chrome.browserAction.setBadgeText({text: counter.toString()});
 }
 
-var removeRullingRuleByHash = function (hash) {
+var removeRunningRuleByHash = function (hash) {
     if (null === hash || (typeof hash !== 'string')) {
-        throw new Error("hash param passed to removeRullingRuleByHash was not a string. :: " + (typeof hash));
+        throw new Error("hash param passed to removeRunningRuleByHash was not a string. :: " + (typeof hash));
     }
 
     if (runningProcs.hashMap.hasOwnProperty(hash)) {
@@ -316,12 +307,24 @@ var removeRullingRuleByHash = function (hash) {
 
 
 /**
- * @todo update counter of RunningRule for this rule
- * @param oRule
+ * Update counter of RunningRule for this rule
+ * and latestTime
+ *
+ * @param oRule DomainRule object
  * @param details
  */
 var updateCallInProgress = function (oRule, details) {
 
+    if (null === oRule || (typeof oRule !== 'object') || !(oRule instanceof DomainRule)) {
+        throw Error("First param passed to updateCallInProgress must be instance of DomainRule");
+    }
+
+    var runningRule, hash = oRule.hashCode();
+    runningRule = runningProcs.getRule(hash);
+    if (runningRule) {
+        d("Updating running rule: " + runningRule.rule.ruleName);
+        runningRule.incrementCounter();
+    }
 }
 
 
@@ -349,20 +352,25 @@ var scheduleRule = function (rule) {
             $.ajax({
                 url: uri
                 //,headers: {"X-Test-Header": "test-value"}
-            }).done(function() { d("success"); })
-                .fail(function() { d("error"); })
-                .always(function() { d("complete"); });
+            }).done(function () {
+                    d("success");
+                })
+                .fail(function () {
+                    d("error");
+                })
+                .always(function () {
+                    d("complete");
+                });
         } else {
             d("RULE for " + hash + " IS NOT SCHEDULE TO RUN");
         }
         /**
-         * @todo
-         * add extra 0 to interval multiplier
-         * right now it will be 1/10 of a minute,
-         * in production we want interval to be in minutes!
-         * @debug change me to 60000
+         * Schedule this request to run
+         * in number of seconds set in rule's interval
+         * Rule's interval is set in minutes, we have to
+         * convert it to milliseconds by multiplying by 60000
          */
-    }, (rule.getInterval() * 30000))
+    }, (rule.getInterval() * 60000))
 
 }
 
@@ -406,12 +414,39 @@ var handleTabClose = function (tabId) {
         if (rule.breakOnTabClose) {
             d("Rule has breakOnTabClose option. Will remove this rule");
             removeRunningRule(rule);
-        } else {
-            d("Rule does not have breakOnTabClose option");
         }
     } else {
         d("No rule for tabId " + tabId);
     }
+}
+
+/**
+ * Get the object that represents opened popup window
+ * (browserAction window)
+ * If popup window not opened returns null
+ *
+ * This function is currently not used.
+ *
+ * @returns {*}
+ */
+var getPopupView = function () {
+    views = chrome.extension.getViews();
+    console.log("TOTAL VIEWS: " + views.length);
+    for (var i = 0; i < views.length; i++) {
+        view = views[i];
+        myHref = view.location.href;
+        console.log("View: " + view);
+        console.log("View href: " + view.location.href);
+        d("IS popup.html: " + myHref.endsWith("popup.html"));
+        //View href: chrome-extension://gedhildfbncohbnfpolpiohkhmgccajo/popup.html
+        if (myHref.endsWith("popup.html")) {
+            return view;
+            //view.document.getElementById("popup_ui_main").innerHTML = "<p>HELLO FROM BACKGROUND</p>";
+            //view.showAlert("Hello from the background");
+        }
+    }
+
+    return null;
 }
 
 
@@ -440,22 +475,6 @@ var initbgpage = function (reload) {
             oRule = getDomainRuleForUri(url);
 
             if (oRule) {
-                views = chrome.extension.getViews();
-                console.log("TOTAL VIEWS: " + views.length);
-                for (var i = 0; i < views.length; i++) {
-                    view = views[i];
-                    myHref = view.location.href;
-                    console.log("View: " + view);
-                    console.log("View href: " + view.location.href);
-                    d("IS popup.html: " + myHref.endsWith("popup.html"));
-                    if (myHref.endsWith("popup.html")) {
-                        //view.document.getElementById("popup_ui_main").innerHTML = "<p>HELLO FROM BACKGROUND</p>";
-                        view.showAlert("Hello from the background");
-                    }
-                    //View href: chrome-extension://gedhildfbncohbnfpolpiohkhmgccajo/popup.html
-
-                }
-
 
                 /**
                  * If result matches rule

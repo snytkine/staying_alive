@@ -46,7 +46,6 @@ var TEMP_RULES = [
 ]
 
 
-
 // parseUri 1.2.2
 // (c) Steven Levithan <stevenlevithan.com>
 // MIT License
@@ -106,7 +105,7 @@ String.prototype.endsWithDomain = function (s) {
 }
 
 if (typeof String.prototype.endsWith !== 'function') {
-    String.prototype.endsWith = function(suffix) {
+    String.prototype.endsWith = function (suffix) {
         return this.indexOf(suffix, this.length - suffix.length) !== -1;
     };
 }
@@ -153,7 +152,7 @@ function getHostname(url) {
 var DomainRule = function (o) {
     this.ruleName = o.ruleName || null;
     this.uri = (o.uri) ? o.uri.toLocaleLowerCase() : null;
-    this.loopUri = (o.loopUri) ?  o.loopUri.toLocaleLowerCase() : null;
+    this.loopUri = (o.loopUri) ? o.loopUri.toLocaleLowerCase() : null;
     this.rule = o.rule || null;
     this.requestInterval = (o.requestInterval) ? parseInt(o.requestInterval, 10) : 1;
     this.removeCookies = o.removeCookies || null;
@@ -285,9 +284,43 @@ var RunningRule = function (o, tabId) {
 
     /**
      * Time when this object was created
-     * @type {Date}
+     * @type number milliseconds
      */
-    this.initTime = new Date();
+    this.initTime = (new Date()).getTime();
+
+    /**
+     * Initially latestTime equals to 0
+     * @type {number}
+     */
+    this.latestTime = 0;
+}
+
+/**
+ * Increment counter
+ * and update latestTime to the epoch time in milliseconds
+ */
+RunningRule.prototype.incrementCounter = function () {
+    var ts = (new Date()).getTime();
+    this.counter += 1;
+    this.latestTime = ts;
+}
+
+/**
+ * Get number of milliseconds till next rule will run
+ * This will not be exact number since
+ * it probably took about a millisecond to
+ * process and setup rule but this is a good
+ * estimation that can be used to show
+ * the time till rule is scheduled to run next time
+ *
+ * @returns {number}
+ */
+RunningRule.prototype.getNextRunTime = function () {
+    var ret, ts = Date.now();
+    var lastRun = (this.latestTime > 0) ? this.latestTime : this.initTime;
+    ret = lastRun + (this.rule.getInterval() * 60 * 1000) - ts;
+
+    return ret;
 }
 
 // end RunningRule

@@ -1019,6 +1019,31 @@ input[type="button"].btn-block {
 .affix {
   position: fixed;
 }
+.close {
+  float: right;
+  font-size: 21px;
+  font-weight: bold;
+  line-height: 1;
+  color: #000000;
+  text-shadow: 0 1px 0 #ffffff;
+  opacity: 0.2;
+  filter: alpha(opacity=20);
+}
+.close:hover,
+.close:focus {
+  color: #000000;
+  text-decoration: none;
+  cursor: pointer;
+  opacity: 0.5;
+  filter: alpha(opacity=50);
+}
+button.close {
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  -webkit-appearance: none;
+}
 a.settings {
   display: inline-block;
   padding: 6px 12px;
@@ -1284,6 +1309,13 @@ table.running_procs thead > tr th.rp_count,
 table.running_procs thead > tr th:last-child {
   width: 3%;
 }
+table.running_procs thead > tr th.rp_int,
+table.running_procs thead > tr th.rp_next {
+  width: 20%;
+}
+table.running_procs thead > tr th:first-child {
+  width: 50%;
+}
 table.running_procs tbody tr td:first-child span.badge {
   background-color: #428bca;
 }
@@ -1306,7 +1338,10 @@ span.counter:empty {
   display: none;
 }
 #popup_ui {
-  min-width: 470px;
+  min-width: 490px;
+  padding-right: 5px !important;
+  padding-left: 5px !important;
+  margin-top: 5px !important;
 }
 .cancel_rule {
   display: inline-block;
@@ -1407,7 +1442,58 @@ button.cancel_rule > span {
 button.cancel_rule > span:before {
   content: "\e014";
 }
-
-div.tooltip-inner {
-    max-width: none !important;
+span.rule_name {
+  border-bottom-color: #999999 !important;
+  border-bottom-style: dashed !important;
+  border-bottom-width: 1px !important;
+}
+span.rule_name a {
+  color: #555555;
+}
+span.rule_name a:hover {
+  text-decoration: none;
+}
+#my_header {
+  padding: 5px;
+  background: black;
+  min-height: 38px;
+}
+#my_header a.my_settings {
+  position: absolute;
+  color: white;
+  text-decoration: none;
+  margin-left: 4px;
+  margin-top: 4px;
+}
+#my_header a.my_settings :hover {
+  text-decoration: none;
+}
+#my_header button.my_close {
+  float: right;
+  font-size: 21px;
+  font-weight: bold;
+  line-height: 1;
+  color: #000000;
+  text-shadow: 0 1px 0 #ffffff;
+  opacity: 0.2;
+  filter: alpha(opacity=20);
+  opacity: 0.9;
+}
+#my_header button.my_close:hover,
+#my_header button.my_close:focus {
+  color: #000000;
+  text-decoration: none;
+  cursor: pointer;
+  opacity: 0.5;
+  filter: alpha(opacity=50);
+}
+button#my_header button.my_close {
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  -webkit-appearance: none;
+}
+.tooltip-inner {
+  max-width: none !important;
 }
