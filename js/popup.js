@@ -1,12 +1,9 @@
 /**
- * Created with JetBrains PhpStorm.
- * User: snytkind
- * Date: 8/30/13
- * Time: 9:33 AM
- * To change this template use File | Settings | File Templates.
+ * Created by Dmitri Snytkine
+ * Logic for rendering data in browser action popup window
+ * of the extension.
+ *
  */
-
-
 var bgpage = chrome.extension.getBackgroundPage();
 
 var showAlert = function (s) {
@@ -96,8 +93,9 @@ var formatInterval = function (i, itype) {
 
 /**
  * Render html table
- * width details about runnig background processes
- * @param procs
+ * with details about running background processes.
+ *
+ * @param procs object RunningProcs
  */
 var showProcs = function renderTable(procs) {
     console.log("WILL SHOW running procs");
@@ -267,7 +265,7 @@ $(function () {
 
     /**
      * This is important to properly
-     * render bootstrap's tooltop
+     * render bootstrap's tooltip
      */
     $('body').tooltip({
         selector: '[rel=tooltip]'

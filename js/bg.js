@@ -1,4 +1,10 @@
 /**
+ * Logic for background page
+ * to issue page requests in specific intervals
+ * 
+ * @author Dmitri Snytkine
+ */
+/**
  * Some Logic:
  * If request url is on the list then:
 
@@ -7,11 +13,11 @@
 
  in the extension if request was by XHR then - may remove specific cookie!
 
- AND if statusLine contains 302 then remove this uri from 'monitored' array.
+ AND if statusLine contains 302 then remove this uri from runningProcs object
 
- Before every request check 'monitored' array
- after every result update object in the 'monitored' array
- with timestamp, statusLine and all headers.
+ Before every request check runningProcs hashMap
+ after every result update object in the runningProcs
+ with timestamp, and increment counter of successful requests
 
 
  Example how to remove specific header (must return from synchronous blocking call)
@@ -354,12 +360,8 @@ var scheduleRule = function (rule) {
                 //,headers: {"X-Test-Header": "test-value"}
             }).done(function () {
                     d("success");
-                })
-                .fail(function () {
+                }).fail(function () {
                     d("error");
-                })
-                .always(function () {
-                    d("complete");
                 });
         } else {
             d("RULE for " + hash + " IS NOT SCHEDULE TO RUN");
