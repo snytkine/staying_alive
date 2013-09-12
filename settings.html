@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.js"></script>
+    <script src="js/lib.js"></script>
+    <script src="js/underscore.min.js"></script>
+    <script src="js/settings.js"></script>
+
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.css" rel="stylesheet" media="screen">
+    <link href="css/settings.css" rel="stylesheet" media="screen">
+
+
+</head>
+<body>
+
+<div class="container">
+    <h1>SETTINGS</h1>
+
+    <div class="row">
+        <div class="col-md-4">
+
+            <div class="panel panel-default">
+                <div class="panel-heading">Panel heading without title</div>
+                <div class="panel-body">
+                    <div class="list-group">
+                        <a href="#" class="list-group-item active">
+                            Cras justo odio
+                        </a>
+                        <a href="#" class="list-group-item">Dapibus ac facilisis in</a>
+                        <a href="#" class="list-group-item">Morbi leo risus</a>
+                        <a href="#" class="list-group-item">Porta ac consectetur ac</a>
+                        <a href="#" class="list-group-item">Vestibulum at eros</a>
+                    </div>
+                    <button type="button" class="btn btn-default btn-lg">
+                        <span class="glyphicon glyphicon-plus"></span> Add Rule
+                    </button>
+                </div>
+            </div>
+
+
+        </div>
+        <div class="col-md-8">
+            <div class="panel panel-default">
+                <div class="panel-heading">Rule Setup</div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label for="trigger_name">Rule Name</label>
+                        <input type="text" class="form-control" id="trigger_name" placeholder="Assign a short name for this rule">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trigger_uri">Trigger Url</label>
+                        <input type="text" class="form-control" id="trigger_uri" placeholder="Requesting this url from browser will trigger background request loop">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loop_uri">Background Request Url</label>
+                        <input type="text" class="form-control" id="loop_uri" placeholder="This url will be requested in background">
+                    </div>
+
+                    <div class="request_interval">
+                        <label for="loop_interval">Request Interval (in minutes)</label>
+                        <input type="text" id="loop_interval" size="3" maxlength="3">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel panel-default">
+                <div class="panel-heading">Background Loop Exit Options</div>
+                <div class="panel-body">
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" id="loop_exit_tab"> End Loop when browser tab is closed
+                        </label>
+                    </div>
+
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" id="loop_exit_200"> End Loop when http response code is not 200
+                        </label>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="panel panel-default">
+                <div class="panel-heading">Cookie options</div>
+                <div class="panel-body">
+                    <p>Http Cookies received by background request may interfere with the forground requests.
+                        <br>If you want to ignore certain cookies enter names of cookies to ignore one per line</p>
+                    <textarea rows="3" id="cookie_ignore"></textarea>
+                </div>
+            </div>
+
+            <p>
+                <button type="button" id="save_rule">Save Rule</button>
+            </p>
+
+        </div>
+    </div>
+</div>
+<div id="saved_confirm" style="display: none;">Rule Saved</div>
+</body>
+
+</html>

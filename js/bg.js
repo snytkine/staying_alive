@@ -1,7 +1,7 @@
 /**
  * Logic for background page
  * to issue page requests in specific intervals
- * 
+ *
  * @author Dmitri Snytkine
  */
 /**
