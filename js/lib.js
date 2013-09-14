@@ -14,6 +14,7 @@ var d = function (s) {
 
 var TEMP_RULES = [
     {
+        "id" : "h234235235",
         "uri": "http://stackoverflow.com/unanswered",
         "loopUri": "http://stackoverflow.com/questions/18582509/difference-between-lxml-and-html5lib-in-the-context-of-beautifulsoup",
         "ruleName": "StackOverflow Unanswered",
@@ -29,6 +30,7 @@ var TEMP_RULES = [
         "breakOnTabClose": true
     },
     {
+        "id" : "h099122",
         "uri": "http://sports.yahoo.com/nfl/",
         "loopUri": "http://sports.yahoo.com/nfl/teams/phi/",
         "ruleName": "Yahoo Sports NFL",
@@ -150,6 +152,7 @@ function getHostname(url) {
  * @constructor
  */
 var DomainRule = function (o) {
+    this.id = o.id || null;
     this.ruleName = o.ruleName || null;
     this.uri = (o.uri) ? o.uri.toLocaleLowerCase() : null;
     this.loopUri = (o.loopUri) ? o.loopUri.toLocaleLowerCase() : null;

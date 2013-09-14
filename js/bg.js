@@ -390,7 +390,6 @@ var getDomainRuleForUri = function (url) {
     DOMAIN_RULES.forEach(function (o, i) {
         if (o.isUriMatch(url)) {
             d("Found url rule for url: " + url);
-
             ret = o;
         }
     })
