@@ -309,6 +309,40 @@ var removeRunningRuleByHash = function (hash) {
     chrome.browserAction.setBadgeText({text: counter.toString()});
 }
 
+/**
+ * Remove rule from runningProcs by value of DomainRule id
+ * @param string id
+ */
+var removeRunningRuleById = function (id) {
+    var found = false, p;
+
+    if (null === id || (typeof id !== 'string')) {
+        throw new Error("id param passed to removeRunningRuleById was not a string. :: " + (typeof id));
+    }
+
+    for (p in runningProcs.hashMap) {
+        if (runningProcs.hashMap.hasOwnProperty(p)) {
+
+            if (id === runningProcs.hashMap[p].rule.id) {
+                console.log("Found RunningRule with id: " + runningProcs.hashMap[p].rule.ruleName);
+                found = p;
+            }
+        }
+    }
+
+    if (found) {
+        delete(runningProcs.hashMap[found]);
+    }
+
+    counter = runningProcs.size();
+    if (counter < 1) {
+        counter = "";
+    }
+
+    chrome.browserAction.setBadgeText({text: counter.toString()});
+}
+//removeRunningRuleByHash
+
 
 /**
  * Update counter of RunningRule for this rule

@@ -382,6 +382,31 @@ RunningRules.prototype.getRule = function (hash) {
 }
 
 /**
+ * Get DomainRule by value of id
+ *
+ * @param string id
+ * @returns mixed null|DomainRule object
+ */
+RunningRules.prototype.getRuleById = function (id) {
+    if (null === id || (typeof id !== 'string')) {
+        throw new Error("id param passed to getRuleById was not a String. : " + (typeof id));
+    }
+
+
+    for (var p in this.hashMap) {
+        if (this.hashMap.hasOwnProperty(p)) {
+
+            if (id === this.hashMap[p].rule.id) {
+                console.log("Found RunningRule with id: " + this.hashMap[p].rule.ruleName);
+                return this.hashMap[p].rule;
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
  * Return number of RunningRule objects stored
  * in this hashMap
  * @returns {number}

@@ -197,6 +197,7 @@ var showSaved = function (s) {
  * Then persist DOMAIN_RULES array to storage
  */
 var saveFormValues = function () {
+    var aRules = bgpage.DOMAIN_RULES;
     var i, updated = false;
     d("Saving form");
     try {
@@ -235,7 +236,9 @@ var saveFormValues = function () {
     for (i = 0; i < aRules.length; i += 1) {
         if (aRules[i].id === oFormVals.id) {
             d("Will update existing rule: " + aRules[i].ruleName);
+            d("Hash before update: " + aRules[i].hashCode());
             aRules[i].update(oFormVals);
+            d("Hash after update: " + aRules[i].hashCode());
             updated = true;
         }
     }

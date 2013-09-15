@@ -127,12 +127,12 @@ var showProcs = function renderTable(procs) {
         if (procs.hashMap.hasOwnProperty(p)) {
             rr = procs.hashMap[p]
             dr = rr['rule'];
-            show_running += '<tr id="' + dr.hashCode() + '" start_time="' + rr.initTime + '">';
+            show_running += '<tr id="' + dr.id + '" start_time="' + rr.initTime + '">';
             show_running += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + dr.getLoopUri() + '"><a href="#">' + dr.ruleName + '</a></span></td>';
             show_running += '<td class="rule_interval">' + formatInterval(dr.getInterval(), "m") + '</td>';
             show_running += '<td class="next_run">' + formatInterval(rr.getNextRunTime()) + '</td>';
             show_running += '<td><span class="counter">' + rr.counter + '</span></td>';
-            show_running += '<td><button type="button" rel="tooltip" data-toggle="tooltip" title="Cancel rule" class="cancel_rule" rule_id="' + p + '" >';
+            show_running += '<td><button type="button" rel="tooltip" data-toggle="tooltip" title="Cancel rule" class="cancel_rule" rule_id="' + dr.id + '" >';
             show_running += '<span></span></button></td></tr>';
         }
     }
@@ -154,9 +154,10 @@ var updateTable = function (procs) {
             rr = procs.hashMap[p]
             dr = rr['rule'];
 
-            tr = $("#" + p);
+            tr = $("#" + dr.id);
 
             if (tr.length > 0) {
+                tr.find("td.rule_name").attr(dr.getLoopUri());
                 tr.find("td.rule_interval").html(formatInterval(dr.getInterval(), "m"));
                 tr.find("td.next_run").html(formatInterval(rr.getNextRunTime()));
                 tr.find("span.counter").html(rr.counter);
@@ -170,12 +171,12 @@ var updateTable = function (procs) {
                  * one of the rules, thus added to runningProcs object
                  */
                 tr = "";
-                tr += '<tr id="' + dr.hashCode() + '" start_time="' + rr.initTime + '">';
+                tr += '<tr id="' + dr.id + '" start_time="' + rr.initTime + '">';
                 tr += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + dr.getLoopUri() + '"><a href="#">' + dr.ruleName + '</a></span></td>';
                 tr += '<td class="rule_interval">' + formatInterval(dr.getInterval(), "m") + '</td>';
                 tr += '<td class="next_run">' + formatInterval(rr.getNextRunTime()) + '</td>';
                 tr += '<td><span class="counter">' + rr.counter + '</span></td>';
-                tr += '<td><button type="button" rel="tooltip" data-toggle="tooltip" title="Cancel rule" class="cancel_rule" rule_id="' + p + '" >';
+                tr += '<td><button type="button" rel="tooltip" data-toggle="tooltip" title="Cancel rule" class="cancel_rule" rule_id="' + dr.id + '" >';
                 tr += '<span></span></button></td>';
                 tr += '</tr>';
 
@@ -203,8 +204,11 @@ var updateTable = function (procs) {
              * Check for id mthead!
              */
             if (e.attr('id') !== 'mthead') {
-                if (!procs.hashMap.hasOwnProperty(e.attr('id'))) {
+                if (!procs.getRuleById(e.attr('id'))) {
+                    d("Removing tr with id: " + e.attr('id'));
                     e.remove();
+                } else {
+                    d("tr with id " + e.attr('id') + " found in procs");
                 }
             }
         })
@@ -281,9 +285,9 @@ $(function () {
      * and re-render the popup window view immediately
      */
     $("#popup_ui_main").delegate("button.cancel_rule", "click", function () {
-        var hash = $(this).attr("rule_id");
-        console.log("Cancelling rule " + hash);
-        bgpage.removeRunningRuleByHash(hash);
+        var id = $(this).attr("rule_id");
+        console.log("Cancelling rule " + id);
+        bgpage.removeRunningRuleById(id);
         updatePopup(true);
     });
 })
