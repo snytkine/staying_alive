@@ -365,7 +365,6 @@ var removeRunningRuleById = function (id) {
 
     chrome.browserAction.setBadgeText({text: counter.toString()});
 }
-//removeRunningRuleByHash
 
 
 /**
@@ -377,12 +376,21 @@ var removeRunningRuleById = function (id) {
  */
 var updateCallInProgress = function (oRule, details) {
 
+    var p, runningRule;
+
     if (null === oRule || (typeof oRule !== 'object')) {
         throw Error("First param passed to updateCallInProgress must be instance of DomainRule");
     }
 
-    var runningRule, hash = oRule.hashCode();
-    runningRule = runningProcs.getRule(hash);
+    for (p in runningProcs.hashMap) {
+        if (runningProcs.hashMap.hasOwnProperty(p)) {
+
+            if (oRule.id === runningProcs.hashMap[p].rule.id) {
+                runningRule = runningProcs.hashMap[p];
+            }
+        }
+    }
+
     if (runningRule) {
         d("Updating running rule: " + runningRule.rule.ruleName);
         runningRule.incrementCounter();
