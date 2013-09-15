@@ -267,8 +267,8 @@ var removeCacheHeaders = function (details) {
 var addToCallsInProgress = function (oRule, fromTabId) {
 
     var counter = runningProcs.size();
-    if (runningProcs.hasRule(oRule) && !fromTabId) {
-        d("There is  already the same rule in RunningProcs");
+    if (!fromTabId && runningProcs.hasRule(oRule)) {
+        d("There is  already the same rule in runningProcs");
         scheduleRule(oRule);
         return true;
     }
@@ -306,7 +306,7 @@ var removeRunningRule = function (oRule) {
         throw Error("removeRunningRule parameter must be instance of DomainRule");
     }
 
-    runningProcs.removeRule(oRule);
+    removeRunningRuleById(oRule.id);
 
     counter = runningProcs.size();
     if (counter < 1) {
@@ -399,14 +399,14 @@ var updateCallInProgress = function (oRule, details) {
  * @param rule
  */
 var scheduleRule = function (rule) {
-    d("309 in scheduleRule()");
-    var hash = rule.hashCode();
+    d("starting scheduleRule()");
+    var id = rule.id;
 
-    d("WILL START rule: " + hash + " IN " + rule.getInterval() + " minute(s)");
+    d("WILL START rule: " + rule.ruleName + " id: " + id + " IN " + rule.getInterval() + " minute(s)");
     setTimeout(function () {
-        var uri, myrule = runningProcs.getRule(hash);
+        var uri, myrule = runningProcs.getRuleById(id);
         if (myrule) {
-            uri = myrule.rule.getLoopUri();
+            uri = myrule.getLoopUri();
             d("RULE for " + uri + " IS STILL IN PROGRESS");
             /**
              * Can set  extra headers if defined in this rule...
@@ -415,12 +415,15 @@ var scheduleRule = function (rule) {
                 url: uri
                 //,headers: {"X-Test-Header": "test-value"}
             }).done(function () {
-                    d("success");
+                    d("success for rule " + myrule.ruleName);
                 }).fail(function () {
-                    d("error");
+                    d("error for rule " + myrule.ruleName);
                 });
         } else {
-            d("RULE for " + hash + " IS NOT SCHEDULE TO RUN");
+            d("RULE for " + id + " IS NOT SCHEDULE TO RUN");
+            /**
+             * 
+             */
         }
         /**
          * Schedule this request to run
@@ -445,7 +448,7 @@ var getDomainRuleForUri = function (url) {
     var ret = false;
 
     DOMAIN_RULES.forEach(function (o, i) {
-        d("Trying to match url: " + url + " for rule: " + o.ruleName);
+
         if (o.isUriMatch(url)) {
             d("Found url rule for url: " + url);
             ret = o;

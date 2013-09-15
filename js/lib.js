@@ -452,36 +452,36 @@ RunningRules.prototype.size = function () {
  * @returns {*}
  */
 RunningRules.prototype.hasRule = function (o) {
-
+    var p, found = false;
     if (null === o || (typeof o !== 'object')) {
         throw Error("object passed to hasRule must be instance of DomainRule");
     }
 
-    return this.hashMap.hasOwnProperty(o.hashCode());
-}
-
-/**
- * Remove RunningRule that represents DomainRule object
- * from this object's hashMap
- *
- * @param o DomainRule object
- * @returns bool true if RunningRule for the passed DomainRule
- * was removed false if it was not removed (if no RunningRule for the DomainRule)
- */
-RunningRules.prototype.removeRule = function (o) {
-
-    if (null === o || (typeof o !== 'object')) {
-        throw Error("object passed to hasRule must be instance of DomainRule");
-    }
-
-    if (this.hasRule(o)) {
-        delete(this.hashMap[o.hashCode()]);
-
+    /**
+     * First check by hashCode. Even if different rule
+     * has the same hashCode then return true.
+     * This means there is already a rule with
+     * same uri and loopUri
+     */
+    if (this.hashMap.hasOwnProperty(o.hashCode())) {
         return true;
+    }
+
+    /**
+     * Loop and check by id
+     */
+    for (p in this.hashMap) {
+        if (this.hashMap.hasOwnProperty(p)) {
+            if (o.id === this.hashMap[p].rule.id) {
+                console.log("Found rule: " + o.ruleName + " by id: " + o.id + " in runningProcs");
+                return true;
+            }
+        }
     }
 
     return false;
 }
+
 
 /**
  * Remove RunningRule that has matching tabId
