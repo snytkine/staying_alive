@@ -240,7 +240,12 @@ var removeCacheHeaders = function (details) {
     var removed = 0;
 
     details.responseHeaders.forEach(function (v, i, a) {
-        if (v.name == "Expires" || v.name == "Last-Modified" || v.name == "Cache-Control" || v.name == "Etag") {
+        /**
+         * Important to do case-insensitive search for header names
+         * Some servers send these headers using different case variations
+         */
+        var headerName = v.name.toLowerCase();
+        if (headerName == "expires" || headerName == "last-modified" || headerName == "cache-control" || headerName == "etag") {
             d("Removing cache header: " + v.name);
             details.responseHeaders.splice(i, 1);
             removed++;
