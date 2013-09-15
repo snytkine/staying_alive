@@ -1,52 +1,14 @@
 var STORAGE = chrome.storage.local;
-var STORAGE_KEY = "my_stay_alive";
+var STORAGE_KEY = "staying_alive_rules";
 var BADGE_TITLE = "Staying Alive";
-var REQUEST_TYPES_KEY = "types";
 
 /**
  * Log debug message to console
- * @param s
+ * @param string s String to log
  */
 var d = function (s) {
-
     console.log("[" + (new Date().toLocaleTimeString()) + "] " + s);
 }
-
-var TEMP_RULES = [
-    {
-        "id" : "h234235235",
-        "uri": "http://stackoverflow.com/unanswered",
-        "loopUri": "http://stackoverflow.com/questions/18582509/difference-between-lxml-and-html5lib-in-the-context-of-beautifulsoup",
-        "ruleName": "StackOverflow Unanswered",
-        "rule": {
-            "ruleType": "httpCodeIs",
-            "ruleValue": "200"
-        },
-        "requestInterval": 1,
-        "removeCookies": ["ccn"],
-        "addHeaders": [
-            {name: "X-Skip-Log", value: "SKIP"}
-        ],
-        "breakOnTabClose": true
-    },
-    {
-        "id" : "h099122",
-        "uri": "http://sports.yahoo.com/nfl/",
-        "loopUri": "http://sports.yahoo.com/nfl/teams/phi/",
-        "ruleName": "Yahoo Sports NFL",
-        "rule": {
-            "ruleType": "httpCodeIs",
-            "ruleValue": "200"
-        },
-        "requestInterval": 1,
-        "removeCookies": ["ccn"],
-        "addHeaders": [
-            {name: "X-Skip-Log", value: "SKIP"}
-        ],
-        "breakOnTabClose": true
-    }
-]
-
 
 // parseUri 1.2.2
 // (c) Steven Levithan <stevenlevithan.com>
@@ -122,6 +84,7 @@ function getStoredItem() {
 }
 
 function persist(value, f) {
+
     if (!value) {
         value = ""
     }
@@ -155,7 +118,7 @@ var DomainRule = function (o) {
     this.id = o.id || null;
     this.ruleName = o.ruleName || null;
     this.uri = (o.uri) ? o.uri.toLocaleLowerCase() : null;
-    this.loopUri = (o.loopUri) ? o.loopUri.toLocaleLowerCase() : null;
+    this.loopUri = (o.loopUri && o.loopUri.length > 0) ? o.loopUri.toLocaleLowerCase() : null;
     this.rule = o.rule || null;
     this.requestInterval = (o.requestInterval) ? parseInt(o.requestInterval, 10) : 1;
     this.removeCookies = o.removeCookies || null;
@@ -163,6 +126,25 @@ var DomainRule = function (o) {
 }
 
 /**
+ * Update values of the object with
+ * values from passed in object
+ *
+ * The value of id is NOT updated
+ *
+ * @param o
+ */
+DomainRule.prototype.update = function (o) {
+    this.ruleName = o.ruleName || null;
+    this.uri = (o.uri) ? o.uri.toLocaleLowerCase() : null;
+    this.loopUri = (o.loopUri && o.loopUri.length > 0) ? o.loopUri.toLocaleLowerCase() : null;
+    this.rule = o.rule || null;
+    this.requestInterval = (o.requestInterval) ? parseInt(o.requestInterval, 10) : 1;
+    this.removeCookies = o.removeCookies || null;
+    this.breakOnTabClose = !!(o.breakOnTabClose || false);
+}
+
+/**
+ * Check passed uri agains uri, uri/, loopUri, loopUri/
  *
  * @param uri string
  * @returns boolean
@@ -173,7 +155,7 @@ var DomainRule = function (o) {
  * for example http://example.com/dosomething?id={rand}
  */
 DomainRule.prototype.isUriMatch = function (uri) {
-    ret = uri === this.uri || uri === this.loopUri;
+    ret = uri === this.uri || (uri === (this.uri + '/') ) || uri === this.loopUri || (uri === (this.loopUri + '/') );
 
     return !!ret;
 }
@@ -256,9 +238,9 @@ DomainRule.prototype.equals = function (o) {
         return false;
     }
 
-    if (!(o instanceof DomainRule)) {
-        return false;
-    }
+    /* if (!(o instanceof DomainRule)) {
+     return false;
+     }*/
 
     return o.hashCode() === this.hashCode();
 }
@@ -273,7 +255,7 @@ DomainRule.prototype.equals = function (o) {
  * @constructor
  */
 var RunningRule = function (o, tabId) {
-    if (null === o || (typeof o !== 'object') || !(o instanceof DomainRule)) {
+    if (null === o || (typeof o !== 'object')) {
         throw Error("First param passed to RunningRule constructor must be instance of DomainRule");
     }
 
@@ -354,7 +336,7 @@ var RunningRules = function () {
  */
 RunningRules.prototype.addRule = function (o) {
     var hash;
-    if (null === o || (typeof o !== 'object') || !(o instanceof RunningRule)) {
+    if (null === o || (typeof o !== 'object')) {
         throw Error("object passed to RunningRules::addRule must be instance of RunningRule");
     }
 
@@ -422,7 +404,7 @@ RunningRules.prototype.size = function () {
  */
 RunningRules.prototype.hasRule = function (o) {
 
-    if (null === o || (typeof o !== 'object') || !(o instanceof DomainRule)) {
+    if (null === o || (typeof o !== 'object')) {
         throw Error("object passed to hasRule must be instance of DomainRule");
     }
 
@@ -439,7 +421,7 @@ RunningRules.prototype.hasRule = function (o) {
  */
 RunningRules.prototype.removeRule = function (o) {
 
-    if (null === o || (typeof o !== 'object') || !(o instanceof DomainRule)) {
+    if (null === o || (typeof o !== 'object')) {
         throw Error("object passed to hasRule must be instance of DomainRule");
     }
 
@@ -475,7 +457,6 @@ RunningRules.prototype.getDomainRuleByTabId = function (tabId) {
     }
 
     return null;
-
 }
 // end RunningRules
 // END CLASSES DEFINITION

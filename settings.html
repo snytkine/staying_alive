@@ -3,7 +3,7 @@
 <head>
     <script src="js/jquery.min.js"></script>
     <script src="js/bootstrap.js"></script>
-    <script src="js/underscore.min.js"></script>
+    <script src="js/crypto_sha1.js"></script>
     <script src="js/lib.js"></script>
     <script src="js/settings.js"></script>
 
@@ -16,8 +16,7 @@
 <body>
 
 <div class="container">
-    <h1>SETTINGS</h1>
-
+    <h1 class="settings">Staying Alive Settings</h1>
     <div class="row">
         <div class="col-md-4">
 
@@ -36,10 +35,11 @@
 
         </div>
         <div class="col-md-8">
-            <div class="well hidden" id="no_rule">
+            <div class="well" id="no_rule">
+                Select a Rule to edit or<br>
                 Click <strong>"Create New Rule"</strong> button to add new rule
             </div>
-            <div id="rule_form" class="rule_form">
+            <div id="rule_form" class="rule_form hidden">
                 <div class="panel panel-default">
 
                     <div class="panel-heading">Rule Setup</div>
@@ -99,7 +99,7 @@
                 </div>
 
                 <p>
-                    <button type="button" id="save_rule">Save Rule</button>
+                    <button type="button" id="save_rule">Save Rule</button> <button type="button" id="delete_rule">Delete Rule</button>
                 </p>
 
             </div>

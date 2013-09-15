@@ -42,12 +42,11 @@
  * By default remove X-Requested-With using some option in jQ (looks like it's not set anyway when using $.get() way...)
  */
 
-var icons, iconImg, oData = {};
+var runningProcs, iconImg, oData = {}, DOMAIN_RULES = [];
 
 iconImg = document.createElement('img');
 iconImg.src = 'img/24/geek_zombie_24.png';
 
-var DOMAIN_RULES = [];
 
 /**
  * Object that hold RunningRule objects
@@ -56,11 +55,10 @@ var DOMAIN_RULES = [];
  *
  * @type {RunningRules}
  */
-var runningProcs = new RunningRules();
+runningProcs = new RunningRules();
 
 var addHeader = function (url, allHeaders) {
     var sent = 0, i, j, ret = [], aExtraHeaders, myIcon, hostname, aHosts, domain, mydomain = false;
-
 
     chrome.browserAction.setTitle({title: BADGE_TITLE});
 
@@ -280,7 +278,7 @@ var addToCallsInProgress = function (oRule, fromTabId) {
 var removeRunningRule = function (oRule) {
     var counter;
 
-    if (null === oRule || (typeof oRule !== 'object') || !(oRule instanceof DomainRule)) {
+    if (null === oRule || (typeof oRule !== 'object')) {
         throw Error("removeRunningRule parameter must be instance of DomainRule");
     }
 
@@ -321,7 +319,7 @@ var removeRunningRuleByHash = function (hash) {
  */
 var updateCallInProgress = function (oRule, details) {
 
-    if (null === oRule || (typeof oRule !== 'object') || !(oRule instanceof DomainRule)) {
+    if (null === oRule || (typeof oRule !== 'object')) {
         throw Error("First param passed to updateCallInProgress must be instance of DomainRule");
     }
 
@@ -387,7 +385,9 @@ var scheduleRule = function (rule) {
  */
 var getDomainRuleForUri = function (url) {
     var ret = false;
+
     DOMAIN_RULES.forEach(function (o, i) {
+        d("Trying to match url: " + url + " for rule: " + o.ruleName);
         if (o.isUriMatch(url)) {
             d("Found url rule for url: " + url);
             ret = o;
@@ -450,12 +450,28 @@ var getPopupView = function () {
     return null;
 }
 
-
+/**
+ * Initializer functions
+ * Runs on browser load
+ * can be called with true param
+ * to reset chrome onHeadersReceived listener
+ * @param reload
+ */
 var initbgpage = function (reload) {
 
-    TEMP_RULES.forEach(function (o) {
-        DOMAIN_RULES.push(new DomainRule(o));
-    })
+    var j, stored = getStoredItem();
+    /*TEMP_RULES.forEach(function (o) {
+     DOMAIN_RULES.push(new DomainRule(o));
+     })*/
+
+    if (stored && (typeof stored === 'object') && stored.length > 0) {
+        d("Setting DOMAIN FULES from storage");
+        for (j = 0; j < stored.length; j += 1) {
+            DOMAIN_RULES.push(new DomainRule(stored[j]));
+        }
+    } else {
+        d("NO DOMAIN RULES in storage");
+    }
 
     runningProcs = new RunningRules();
 
@@ -558,7 +574,7 @@ var initbgpage = function (reload) {
         chrome.browserAction.setIcon({path: 'img/24/geek_zombie_24.png'});
     });
     if (reload) {
-        chrome.webRequest.onResponseStarted.removeListener(requestListener);
+        chrome.webRequest.onHeadersReceived.removeListener(requestListener);
     }
     chrome.webRequest.onHeadersReceived.addListener(requestListener, {urls: ["<all_urls>"], types: ["main_frame", "xmlhttprequest"]}, ["responseHeaders", "blocking"]);
     chrome.tabs.onRemoved.addListener(handleTabClose);

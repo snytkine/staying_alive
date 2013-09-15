@@ -157,8 +157,6 @@ var updateTable = function (procs) {
             tr = $("#" + p);
 
             if (tr.length > 0) {
-                d("Found tr for " + p + " : " + tr.length);
-
                 tr.find("td.rule_interval").html(formatInterval(dr.getInterval(), "m"));
                 tr.find("td.next_run").html(formatInterval(rr.getNextRunTime()));
                 tr.find("span.counter").html(rr.counter);
@@ -171,7 +169,6 @@ var updateTable = function (procs) {
                  * the uri is entered in active tab and that uri matched
                  * one of the rules, thus added to runningProcs object
                  */
-                d("Row for rule " + p + " not found in table");
                 tr = "";
                 tr += '<tr id="' + dr.hashCode() + '" start_time="' + rr.initTime + '">';
                 tr += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + dr.getLoopUri() + '"><a href="#">' + dr.ruleName + '</a></span></td>';
@@ -240,7 +237,6 @@ var updatePopup = function update(oneTimeOnly) {
     }
 
     if ($("table.running_procs").length > 0) {
-        d("Table already exists, will update cells");
         updateTable(procs);
     } else {
         d("Will render new table");
