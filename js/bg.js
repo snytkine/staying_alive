@@ -422,7 +422,7 @@ var scheduleRule = function (rule) {
         } else {
             d("RULE for " + id + " IS NOT SCHEDULE TO RUN");
             /**
-             * 
+             *
              */
         }
         /**
@@ -538,7 +538,7 @@ var initbgpage = function (reload) {
 
     var requestListener = function (details) {
 
-        var myHref, oUri, views, view, oRule, url = details.url.toLocaleLowerCase();
+        var myHref, oUri, views, view, oRule, url = details.url;
 
         /**
          * Remove ccn cookie if request is mylog

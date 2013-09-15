@@ -141,8 +141,8 @@ function getHostname(url) {
 var DomainRule = function (o) {
     this.id = o.id || null;
     this.ruleName = o.ruleName || null;
-    this.uri = (o.uri) ? o.uri.toLocaleLowerCase() : null;
-    this.loopUri = (o.loopUri && o.loopUri.length > 0) ? o.loopUri.toLocaleLowerCase() : null;
+    this.uri = (o.uri) ? o.uri : null;
+    this.loopUri = (o.loopUri && o.loopUri.length > 0) ? o.loopUri : null;
     this.rule = o.rule || null;
     this.requestInterval = (o.requestInterval) ? parseInt(o.requestInterval, 10) : 1;
     this.removeCookies = o.removeCookies || null;
@@ -159,8 +159,8 @@ var DomainRule = function (o) {
  */
 DomainRule.prototype.update = function (o) {
     this.ruleName = o.ruleName || null;
-    this.uri = (o.uri) ? o.uri.toLocaleLowerCase() : null;
-    this.loopUri = (o.loopUri && o.loopUri.length > 0) ? o.loopUri.toLocaleLowerCase() : null;
+    this.uri = (o.uri) ? o.uri : null;
+    this.loopUri = (o.loopUri && o.loopUri.length > 0) ? o.loopUri : null;
     this.rule = o.rule || null;
     this.requestInterval = (o.requestInterval) ? parseInt(o.requestInterval, 10) : 1;
     this.removeCookies = o.removeCookies || null;
