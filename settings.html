@@ -99,7 +99,7 @@
                 </div>
 
                 <p>
-                    <button type="button" id="save_rule">Save Rule</button> <button type="button" id="delete_rule">Delete Rule</button>
+                    <button type="button" id="save_rule">Save Rule</button> <button type="button" data-toggle="modal" data-target="#myModal" id="delete_rule">Delete Rule</button>
                 </p>
 
             </div>
@@ -107,6 +107,43 @@
     </div>
 </div>
 <div id="saved_confirm" style="display: none;">Rule Saved</div>
+<!-- Confirmation Modal -->
+<div class="modal" id="myModal" tabindex="-1" data-backdrop="" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Confirmation required</h4>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete the rule? Click OK to confirm.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="confirm_delete">Ok</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Modal -->
+<div class="modal" id="alertModal" tabindex="-1" data-backdrop="" role="alert" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="alert_title">Validation Error</h4>
+            </div>
+            <div class="modal-body" id="alert_message">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 
 </html>

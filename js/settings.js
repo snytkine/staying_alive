@@ -20,6 +20,7 @@ if (bgpage) {
 
 
 var loadRules = function () {
+    var aRules = bgpage.DOMAIN_RULES;
     d("Loading rules " + aRules.length + " " + (typeof aRules));
     var s = "", o;
     for (var i = 0; i < aRules.length; i += 1) {
@@ -201,14 +202,14 @@ var saveFormValues = function () {
     try {
         var oFormVals = new SettingsForm();
     } catch (e) {
-        alert("Validation Error\n" + e.message + "\nRule NOT Saved\n");
+        showAlert(e.message + "<br>Rule NOT Saved\n");
         return;
     }
 
     d("formVals: " + JSON.stringify(oFormVals));
 
     if (!oFormVals.id || oFormVals.ruleName.id < 1) {
-        alert("Rule ID is Required\nRule NOT Saved");
+        showAlert("Rule ID is Required<br>Rule NOT Saved");
         return;
     }
     /**
@@ -217,17 +218,17 @@ var saveFormValues = function () {
      * better way than alert
      */
     if (!oFormVals.ruleName || oFormVals.ruleName.length < 1) {
-        alert("Rule Name is Required\nRule NOT Saved");
+        showAlert("Rule Name is Required<br>Rule NOT Saved");
         return;
     }
 
     if (!oFormVals.uri || oFormVals.uri.length < 10) {
-        alert("Trigger Url is Required\nRule NOT Saved");
+        showAlert("Trigger Url is Required<br>Rule NOT Saved");
         return;
     }
 
     if (!oFormVals.uri || oFormVals.requestInterval.length < 1) {
-        alert("Request Interval is Required\nRule NOT Saved");
+        showAlert("Request Interval is Required<br>Rule NOT Saved");
         return;
     }
 
@@ -274,13 +275,15 @@ var saveFormValues = function () {
  * save new array to storage
  */
 var deleteRule = function () {
+    var aRules = bgpage.DOMAIN_RULES;
     var i, id, updated = false;
     id = $("#rule_id").val();
     d("Deleting Rule " + id);
+    d("Number of rules before delete: " + bgpage.DOMAIN_RULES.length);
     for (i = 0; i < aRules.length; i += 1) {
         if (aRules[i].id === id) {
             bgpage.removeRunningRule(aRules[i]);
-            aRules.splice(i);
+            bgpage.DOMAIN_RULES.splice(i, 1);
             break;
         }
     }
@@ -332,16 +335,27 @@ var setupNewRuleEditor = function () {
 }
 
 /**
+ * Show alert message inside modal window
+ * @param string s string to show in alert
+ * @param string title optional title
+ */
+var showAlert = function (s, title) {
+    $("#alert_message").html(s);
+    $("#alert_title").text(title || "Validation Error");
+    $('#alertModal').modal('show')
+}
+
+/**
  * Run on page load.
  * Setup listeners for buttons and menu items
  */
 $(function () {
     $("#save_rule").click(saveFormValues);
-    $("#delete_rule").click(function () {
-        if (confirm("Are you sure?")) {
-            deleteRule();
-        }
+    $("#confirm_delete").click(function () {
+        deleteRule();
+        $('#myModal').modal('hide')
     });
+
     $("#create_rule").click(setupNewRuleEditor)
 
     $("#rules_list").delegate("a.list-group-item", "click", function () {
