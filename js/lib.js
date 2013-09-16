@@ -390,6 +390,7 @@ RunningRules.prototype.addRule = function (o) {
  *
  * @param hash string
  * @returns mixed mull|RunningRule object
+ * @deprecated
  */
 RunningRules.prototype.getRule = function (hash) {
 
