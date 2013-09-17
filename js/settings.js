@@ -46,7 +46,7 @@ var loadRules = function () {
         d("Rule is DomainRule: " + (o instanceof bgpage.DomainRule));
         if ((typeof o === 'object') && o.id && o.ruleName) {
 
-            s += '<a href="#" class="list-group-item" id="' + o.id + '">' + o.ruleName + '</a>';
+            s += '<a href="#" class="list-group-item" id="' + o.id + '">' + o.ruleName + '<span></span></a>';
         }
     }
 
@@ -354,7 +354,7 @@ var setupNewRuleEditor = function () {
     $("a.list-group-item").removeClass("active");
 
     if ($("#new_rule_id").length < 1) {
-        $("#rules_list").prepend($('<a href="#" class="list-group-item active" id="new_rule_id">New Rule<span class="glyphicon glyphicon-hand-right pull-right"></span></a>'));
+        $("#rules_list").prepend($('<a href="#" class="list-group-item active" id="new_rule_id">New Rule<span></span></a>'));
     } else {
         setRuleActive('new_rule_id');
     }

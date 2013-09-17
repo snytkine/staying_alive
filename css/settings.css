@@ -1817,3 +1817,33 @@ fieldset[disabled] #create_rule.active {
   background-color: #ffffff;
   border-color: #cccccc;
 }
+#rules_list a span {
+  position: relative;
+  top: 1px;
+  display: inline-block;
+  font-family: 'Glyphicons Halflings';
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  float: right !important;
+  display: none;
+}
+#rules_list a span:before {
+  content: "\e127";
+}
+#rules_list a.active span {
+  position: relative;
+  top: 1px;
+  display: inline-block;
+  font-family: 'Glyphicons Halflings';
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  float: right !important;
+  display: block;
+}
+#rules_list a.active span:before {
+  content: "\e127";
+}
