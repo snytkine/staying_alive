@@ -36,6 +36,7 @@ if (bgpage) {
 
 
 var loadRules = function () {
+
     var aRules = bgpage.DOMAIN_RULES;
     d("Loading rules " + aRules.length + " " + (typeof aRules));
     var s = "", o;
@@ -87,7 +88,7 @@ var setupRuleEditor = function (ruleId) {
     d("Setting editor for rule " + ruleId);
     rule = getRuleById(ruleId);
     if (rule !== null) {
-
+        loadRules();
         clearEditor();
         setRuleActive(ruleId);
         $("#rule_id").val(rule.id);
@@ -351,6 +352,12 @@ var setupNewRuleEditor = function () {
      * in the menu
      */
     $("a.list-group-item").removeClass("active");
+
+    if ($("#new_rule_id").length < 1) {
+        $("#rules_list").prepend($('<a href="#" class="list-group-item active" id="new_rule_id">New Rule<span class="glyphicon glyphicon-hand-right pull-right"></span></a>'));
+    } else {
+        setRuleActive('new_rule_id');
+    }
 }
 
 /**
@@ -369,6 +376,7 @@ var showAlert = function (s, title) {
  * Setup listeners for buttons and menu items
  */
 $(function () {
+    var oUri = parseUri(window.location.href);
     $("#save_rule").click(saveFormValues);
     $("#confirm_delete").click(function () {
         deleteRule();
@@ -386,5 +394,11 @@ $(function () {
 
 
     loadRules();
+
+    if (oUri && oUri['queryKey'] && oUri['queryKey']['id']) {
+        $("#rule_form").removeClass("hidden");
+        $("#no_rule").addClass("hidden");
+        setupRuleEditor(oUri['queryKey']['id']);
+    }
 })
 
