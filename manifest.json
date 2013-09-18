@@ -6,6 +6,7 @@
         "default_icon": "img/24/geek_zombie_24.png",
         "default_popup": "popup.html"
     },
+    "options_page": "settings.html",
     "description": "Sends Requests in Background to keep session active",
     "icons": {
         "128": "img/128/geek_zombie_128.png",

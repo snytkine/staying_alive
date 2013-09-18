@@ -1494,6 +1494,91 @@ button#my_header button.my_close {
   border: 0;
   -webkit-appearance: none;
 }
+#my_settings {
+  display: inline-block;
+  padding: 6px 12px;
+  margin-bottom: 0;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 1.428571429;
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  white-space: nowrap;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+  color: #333333;
+  background-color: #ffffff;
+  border-color: #cccccc;
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 3px;
+}
+#my_settings:focus {
+  outline: thin dotted #333;
+  outline: 5px auto -webkit-focus-ring-color;
+  outline-offset: -2px;
+}
+#my_settings:hover,
+#my_settings:focus {
+  color: #333333;
+  text-decoration: none;
+}
+#my_settings:active,
+#my_settings.active {
+  outline: 0;
+  background-image: none;
+  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+}
+#my_settings.disabled,
+#my_settings[disabled],
+fieldset[disabled] #my_settings {
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.65;
+  filter: alpha(opacity=65);
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
+#my_settings:hover,
+#my_settings:focus,
+#my_settings:active,
+#my_settings.active,
+.open .dropdown-toggle#my_settings {
+  color: #333333;
+  background-color: #ebebeb;
+  border-color: #adadad;
+}
+#my_settings:active,
+#my_settings.active,
+.open .dropdown-toggle#my_settings {
+  background-image: none;
+}
+#my_settings.disabled,
+#my_settings[disabled],
+fieldset[disabled] #my_settings,
+#my_settings.disabled:hover,
+#my_settings[disabled]:hover,
+fieldset[disabled] #my_settings:hover,
+#my_settings.disabled:focus,
+#my_settings[disabled]:focus,
+fieldset[disabled] #my_settings:focus,
+#my_settings.disabled:active,
+#my_settings[disabled]:active,
+fieldset[disabled] #my_settings:active,
+#my_settings.disabled.active,
+#my_settings[disabled].active,
+fieldset[disabled] #my_settings.active {
+  background-color: #ffffff;
+  border-color: #cccccc;
+}
 .tooltip-inner {
   max-width: none !important;
 }

@@ -34,22 +34,33 @@ if (bgpage) {
     d("NO Background page");
 }
 
-
+/**
+ * Creates menu with rule names
+ * as clickable items
+ */
 var loadRules = function () {
+
     var aRules = bgpage.DOMAIN_RULES;
     d("Loading rules " + aRules.length + " " + (typeof aRules));
     var s = "", o;
-    for (var i = 0; i < aRules.length; i += 1) {
-        o = aRules[i];
-        d("setting one rule ");
-        d("Rule is DomainRule: " + (o instanceof bgpage.DomainRule));
-        if ((typeof o === 'object') && o.id && o.ruleName) {
+    if (aRules.length === 0) {
+        d("No rules to show");
+    } else {
+        for (var i = 0; i < aRules.length; i += 1) {
+            o = aRules[i];
+            d("setting one rule ");
+            d("Rule is DomainRule: " + (o instanceof bgpage.DomainRule));
+            if ((typeof o === 'object') && o.id && o.ruleName) {
 
-            s += '<a href="#" class="list-group-item" id="' + o.id + '">' + o.ruleName + '</a>';
+                s += '<a href="#" class="list-group-item" id="' + o.id + '">' + o.ruleName + '<span></span></a>';
+            }
         }
     }
 
     $("#rules_list").html(s);
+    if (aRules.length === 0) {
+        setupNewRuleEditor();
+    }
 }
 
 
@@ -59,7 +70,7 @@ var loadRules = function () {
  * @returns mixed null | object DomainRule
  */
 var getRuleById = function (ruleId) {
-    var i, ret, o;
+    var i, ret = null, o;
     d("Looking for rule by id: " + ruleId);
 
     for (i = 0; i < aRules.length; i += 1) {
@@ -87,7 +98,7 @@ var setupRuleEditor = function (ruleId) {
     d("Setting editor for rule " + ruleId);
     rule = getRuleById(ruleId);
     if (rule !== null) {
-
+        loadRules();
         clearEditor();
         setRuleActive(ruleId);
         $("#rule_id").val(rule.id);
@@ -351,6 +362,15 @@ var setupNewRuleEditor = function () {
      * in the menu
      */
     $("a.list-group-item").removeClass("active");
+
+    d("settings 360");
+    if ($("#new_rule_id").length < 1) {
+        d("Adding new rules item to rules menu " +  $("#rules_list").length);
+        $("#rules_list").prepend('<a href="#" class="list-group-item active" id="new_rule_id">New Rule<span></span></a>');
+    } else {
+        d("new_rule_id already in the dom");
+        setRuleActive('new_rule_id');
+    }
 }
 
 /**
@@ -369,6 +389,7 @@ var showAlert = function (s, title) {
  * Setup listeners for buttons and menu items
  */
 $(function () {
+    var oUri = parseUri(window.location.href);
     $("#save_rule").click(saveFormValues);
     $("#confirm_delete").click(function () {
         deleteRule();
@@ -384,7 +405,12 @@ $(function () {
         setupRuleEditor(id);
     });
 
-
     loadRules();
+
+    if (oUri && oUri['queryKey'] && oUri['queryKey']['id']) {
+        $("#rule_form").removeClass("hidden");
+        $("#no_rule").addClass("hidden");
+        setupRuleEditor(oUri['queryKey']['id']);
+    }
 })
 
