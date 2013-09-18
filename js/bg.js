@@ -534,9 +534,6 @@ var getPopupView = function () {
 var initbgpage = function (reload) {
 
     var j, stored = getStoredItem();
-    /*TEMP_RULES.forEach(function (o) {
-     DOMAIN_RULES.push(new DomainRule(o));
-     })*/
 
     if (stored && (typeof stored === 'object') && stored.length > 0) {
         d("Setting DOMAIN FULES from storage");
@@ -653,5 +650,16 @@ var initbgpage = function (reload) {
     chrome.webRequest.onHeadersReceived.addListener(requestListener, {urls: ["<all_urls>"], types: ["main_frame", "xmlhttprequest"]}, ["responseHeaders", "blocking"]);
     chrome.tabs.onRemoved.addListener(handleTabClose);
 }
+
+chrome.runtime.onInstalled.addListener(function (details) {
+    var thisVersion;
+    if (details.reason == "install") {
+        console.log("This is a first install!");
+    } else if (details.reason == "update") {
+        thisVersion = chrome.runtime.getManifest().version;
+        console.log("Updated from " + details.previousVersion + " to " + thisVersion + " !");
+    }
+    chrome.tabs.create({url: "settings.html"});
+});
 
 initbgpage();
