@@ -17,6 +17,7 @@
 
 <div class="container">
     <h1 class="settings">Staying Alive Settings</h1>
+
     <div class="row">
         <div class="col-md-4">
 
@@ -98,8 +99,32 @@
                     </div>
                 </div>
 
+                <div class="panel panel-default">
+                    <div class="panel-heading">Extra Header</div>
+                    <div class="panel-body">
+                        <p>You may define an extra http header to be sent with background requests
+                            <br>This may be useful if you sending background requests to your own server
+                            <br>and want the "let the server know" that these are special type of requets
+                            <br>Ignore this option if you not using this extension to communicate with your own server
+                        </p>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" id="h_name"
+                                       placeholder='Name of extra header.'>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" id="h_val"
+                                       placeholder='Value of extra header'>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <p>
-                    <button type="button" id="save_rule">Save Rule</button> <button type="button" data-toggle="modal" data-target="#myModal" id="delete_rule">Delete Rule</button>
+                    <button type="button" id="save_rule">Save Rule</button>
+                    <button type="button" data-toggle="modal" data-target="#myModal" id="delete_rule">Delete Rule
+                    </button>
                 </p>
 
             </div>
@@ -108,7 +133,8 @@
 </div>
 <div id="saved_confirm" style="display: none;">Rule Saved</div>
 <!-- Confirmation Modal -->
-<div class="modal" id="myModal" tabindex="-1" data-backdrop="" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<div class="modal" id="myModal" tabindex="-1" data-backdrop="" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -127,7 +153,8 @@
 </div>
 
 <!-- Alert Modal -->
-<div class="modal" id="alertModal" tabindex="-1" data-backdrop="" role="alert" aria-labelledby="alertModalLabel" aria-hidden="true">
+<div class="modal" id="alertModal" tabindex="-1" data-backdrop="" role="alert" aria-labelledby="alertModalLabel"
+     aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">

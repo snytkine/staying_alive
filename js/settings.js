@@ -111,6 +111,10 @@ var setupRuleEditor = function (ruleId) {
         if (rule.removeCookies && rule.removeCookies.length > 0) {
             cookies = rule.removeCookies.join("\n");
         }
+        if (rule.extraHeader && rule.extraHeader.name && rule.extraHeader.val) {
+            $("#h_name").val(rule.extraHeader.name);
+            $("#h_val").val(rule.extraHeader.val);
+        }
         $("#cookie_ignore").val(cookies);
     }
 }
@@ -123,7 +127,15 @@ var setupRuleEditor = function (ruleId) {
  */
 var SettingsForm = function () {
 
-    var myuri, myloopuri, temp, sCookies = $.trim($("#cookie_ignore").val()), aCookies = [];
+    var myuri,
+        myloopuri,
+        temp,
+        sCookies = $.trim($("#cookie_ignore").val()),
+        aCookies = [],
+        hName = $.trim($("#h_name").val()),
+        hVal = $.trim($("#h_val").val());
+
+    console.log("hName: " + hName + " hVal: " + hVal);
 
     /**
      * Basic validation or urls
@@ -155,6 +167,7 @@ var SettingsForm = function () {
     this.requestInterval = $("#loop_interval").val();
     this.breakOnTabClose = $("#loop_exit_tab").is(':checked');
     this.removeCookies = null;
+    this.extraHeader = null;
 
     if ($("#loop_exit_200").is(':checked')) {
         this.rule = {
@@ -176,6 +189,10 @@ var SettingsForm = function () {
         if (aCookies.length > 0) {
             this.removeCookies = aCookies;
         }
+    }
+
+    if (hName.length > 0 && hVal.length > 0) {
+        this.extraHeader = {name: hName, val: hVal}
     }
 }
 
@@ -365,7 +382,7 @@ var setupNewRuleEditor = function () {
 
     d("settings 360");
     if ($("#new_rule_id").length < 1) {
-        d("Adding new rules item to rules menu " +  $("#rules_list").length);
+        d("Adding new rules item to rules menu " + $("#rules_list").length);
         $("#rules_list").prepend('<a href="#" class="list-group-item active" id="new_rule_id">New Rule<span></span></a>');
     } else {
         d("new_rule_id already in the dom");
