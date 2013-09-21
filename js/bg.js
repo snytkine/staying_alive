@@ -685,4 +685,29 @@ chrome.runtime.onInstalled.addListener(function (details) {
     chrome.tabs.create({url: "settings.html"});
 });
 
+/**
+ * The content script will query this page
+ * will use sender.tab.url
+ * lookup foreground rule for it
+ * and return object like {val: 5}
+ * where 5 is 5 minutes...
+ * When injected content script receives
+ * response message with val > 0
+ * it will initiate the reload interval (start the dance)
+ *
+ * We should not try to match foreground rule
+ * on headersReceived instead just inject the content script
+ * to every page, then the first thing the script does is
+ * queries this process and only if it gets the response it
+ * will initiate
+ */
+chrome.runtime.onMessage.addListener(
+    function(request, sender, sendResponse) {
+        console.log(sender.tab ?
+            "from a content script:" + sender.tab.url :
+            "from the extension");
+        if (request.greeting == "hello")
+            sendResponse({farewell: "goodbye"});
+    });
+
 initbgpage();

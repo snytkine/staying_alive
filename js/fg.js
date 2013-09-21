@@ -8,13 +8,16 @@
 
 (function () {
 
-    var reloadInterval,
+    var reloadTime,
+        reloadInterval,
         init,
         showCountdownAlert,
         stopReload,
         myInner,
         alertDiv,
         startCountdownAlert;
+
+
 
     startCountdownAlert = function updateCounter(s) {
         var seconds = (s || s === 0) ? s : 29;
@@ -76,6 +79,10 @@
 
         document.getElementById("ext_session_alive_reload_cancel").addEventListener("click", function () {
             stopReload();
+        });
+
+        chrome.runtime.sendMessage({getConfig: "reloadTimer"}, function (response) {
+            reloadTime = parseInt(response.reloadTime, 10);
         });
 
         //reloadInterval = setInterval(showCountdownAlert, 35000);
