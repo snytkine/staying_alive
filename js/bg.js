@@ -572,6 +572,15 @@ var initbgpage = function (reload) {
             removeCookie(details, "ccn");
         } else {
 
+            /**
+             * Experimental injection of css and js
+             */
+
+            if (details.type == "main_frame") {
+                chrome.tabs.insertCSS(details.tabId, {file: "css/fg.css"});
+                chrome.tabs.executeScript(details.tabId, {file: "js/fg.js", runAt : "document_idle"});
+            }
+
             oRule = getDomainRuleForUri(url);
 
             if (oRule) {
@@ -641,6 +650,8 @@ var initbgpage = function (reload) {
                         //}, function(){
                         //    d("Injected script to page");
                         //});
+
+
                     addToCallsInProgress(oRule, details.tabId);
                 }
 
