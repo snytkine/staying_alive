@@ -417,19 +417,31 @@ var scheduleRule = function (rule) {
 
     d("WILL START rule: " + rule.ruleName + " id: " + id + " IN " + rule.getInterval() + " minute(s)");
     setTimeout(function () {
-        var uri, myrule = runningProcs.getRuleById(id);
+        var reqObj, hName, hVal, uri, myrule = runningProcs.getRuleById(id);
         if (myrule) {
             uri = myrule.getLoopUri();
             d("RULE for " + uri + " IS STILL IN PROGRESS");
+            reqObj = {url: uri}
+            if (myrule.extraHeader && myrule.extraHeader.name) {
+                console.log("Rule has extraHeader: " + JSON.stringify(myrule.extraHeader));
+            }
+            /**
+             * If rule has extraHeader defined then send it in this background request
+             */
+            if (myrule.extraHeader && myrule.extraHeader.name && myrule.extraHeader.val) {
+                hName = myrule.extraHeader.name;
+                hVal = myrule.extraHeader.val;
+                reqObj.headers = {}
+                reqObj.headers[hName] = hVal;
+            }
+
+            console.log("reqObj: " + JSON.stringify(reqObj));
             /**
              * Can set  extra headers if defined in this rule...
              */
-            $.ajax({
-                url: uri
-                //,headers: {"X-Test-Header": "test-value"}
-            }).done(function () {
-                    d("success for rule " + myrule.ruleName);
-                }).fail(function () {
+            $.ajax(reqObj).done(function () {
+                d("success for rule " + myrule.ruleName);
+            }).fail(function () {
                     d("error for rule " + myrule.ruleName);
                 });
         } else {

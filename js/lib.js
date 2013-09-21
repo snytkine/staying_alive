@@ -147,6 +147,7 @@ var DomainRule = function (o) {
     this.requestInterval = (o.requestInterval) ? parseInt(o.requestInterval, 10) : 1;
     this.removeCookies = o.removeCookies || null;
     this.breakOnTabClose = !!(o.breakOnTabClose || false);
+    this.extraHeader = o.extraHeader || null;
 }
 
 /**
@@ -158,6 +159,7 @@ var DomainRule = function (o) {
  * @param o
  */
 DomainRule.prototype.update = function (o) {
+    console.log("Setting domain rule from object: " + JSON.stringify(o));
     this.ruleName = o.ruleName || null;
     this.uri = (o.uri) ? o.uri : null;
     this.loopUri = (o.loopUri && o.loopUri.length > 0) ? o.loopUri : null;
@@ -165,6 +167,7 @@ DomainRule.prototype.update = function (o) {
     this.requestInterval = (o.requestInterval) ? parseInt(o.requestInterval, 10) : 1;
     this.removeCookies = o.removeCookies || null;
     this.breakOnTabClose = !!(o.breakOnTabClose || false);
+    this.extraHeader = o.extraHeader || null;
 }
 
 /**
@@ -228,18 +231,6 @@ DomainRule.prototype.getInterval = function () {
 
 DomainRule.prototype.toString = function () {
     var ret = "";
-    /*ret += "uri: " + this.uri + ", loopUri: " + this.loopUri + " interval: " + this.getInterval();
-     if (null == this.rule) {
-     ret += " rule: null";
-     } else {
-     ret += " rule: " + JSON.stringify(this.rule);
-     }
-
-     if (null == this.removeCookies) {
-     ret += " removeCookies: null";
-     } else {
-     ret += " removeCookies: " + JSON.stringify(this.removeCookies);
-     }*/
 
     ret = JSON.stringify(this, ["uri", "ruleName", "loopUri", "requestInterval"])
 
