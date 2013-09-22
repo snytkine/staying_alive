@@ -108,6 +108,10 @@ var setupRuleEditor = function (ruleId) {
         $("#loop_interval").val(rule.getInterval());
         $("#loop_exit_tab").prop('checked', !!rule.breakOnTabClose);
         $("#loop_exit_200").prop('checked', !!(rule.rule && rule.rule.ruleType && (rule.rule.ruleType == 'httpCodeIs') && rule.rule.ruleValue == '200'));
+        // Foreground uri and timeout
+        $("#fg_trigger_uri").val(rule.fgUri);
+        $("#fg_interval").val(rule.fgTimeout);
+
         if (rule.removeCookies && rule.removeCookies.length > 0) {
             cookies = rule.removeCookies.join("\n");
         }
@@ -129,6 +133,7 @@ var SettingsForm = function () {
 
     var myuri,
         myloopuri,
+        fguri,
         temp,
         sCookies = $.trim($("#cookie_ignore").val()),
         aCookies = [],
@@ -146,6 +151,8 @@ var SettingsForm = function () {
      */
     myuri = parseUri($("#trigger_uri").val());
     myloopuri = parseUri($("#loop_uri").val());
+    fguri = $("#fg_trigger_uri").val();
+    console.log("fguri: " + fguri);
 
     d("uri in form: " + JSON.stringify(myuri));
     d("loopUri in form: " + JSON.stringify(myloopuri));
@@ -168,6 +175,17 @@ var SettingsForm = function () {
     this.breakOnTabClose = $("#loop_exit_tab").is(':checked');
     this.removeCookies = null;
     this.extraHeader = null;
+
+
+    if (fguri.length > 0) {
+        this.fgUri = fguri;
+    }
+
+    this.fgTimeout = $("#fg_interval").val();
+    if (this.fgTimeout.length > 0) {
+        this.fgTimeout = parseInt(this.fgTimeout, 10);
+    }
+
 
     if ($("#loop_exit_200").is(':checked')) {
         this.rule = {
@@ -199,7 +217,7 @@ var SettingsForm = function () {
 /**
  * Adds css class 'active' to the list rule in the list of rules
  * so that it will have diffident color
- * All other rules that may have been previosly set as active
+ * All other rules that may have been previously set as active
  * are reset to not active
  *
  * @param ruleId

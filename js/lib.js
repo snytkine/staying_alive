@@ -148,6 +148,9 @@ var DomainRule = function (o) {
     this.removeCookies = o.removeCookies || null;
     this.breakOnTabClose = !!(o.breakOnTabClose || false);
     this.extraHeader = o.extraHeader || null;
+
+    this.fgUri = (o.fgUri) ? o.fgUri.toLocaleLowerCase() : null;
+    this.fgTimeout = o.fgTimeout || null;
 }
 
 /**
@@ -168,6 +171,9 @@ DomainRule.prototype.update = function (o) {
     this.removeCookies = o.removeCookies || null;
     this.breakOnTabClose = !!(o.breakOnTabClose || false);
     this.extraHeader = o.extraHeader || null;
+
+    this.fgUri = (o.fgUri) ? o.fgUri.toLocaleLowerCase() : null;
+    this.fgTimeout = o.fgTimeout || null;
 }
 
 /**

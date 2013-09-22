@@ -51,23 +51,32 @@
                             <label for="rule_name">Rule Name</label>
                             <input type="text" class="form-control" id="rule_name"
                                    placeholder="Assign a short name for this rule">
+
+                            <p class="text-muted">Rule will be identified by this name.</p>
                         </div>
 
                         <div class="form-group">
                             <label for="trigger_uri">Trigger Url</label>
                             <input type="text" class="form-control" id="trigger_uri"
                                    placeholder="Requesting this url from browser will trigger background request loop">
+
+                            <p class="text-muted">Requesting this url from browser will start the background request
+                                loop.</p>
                         </div>
 
                         <div class="form-group">
                             <label for="loop_uri">Background Request Url</label>
                             <input type="text" class="form-control" id="loop_uri"
                                    placeholder="This url will be requested in background">
+
+                            <p class="text-muted">Optional. If not specified will use Trigger Url</p>
                         </div>
 
                         <div class="request_interval">
                             <label for="loop_interval">Request Interval (in minutes)</label>
                             <input type="text" id="loop_interval" size="3" maxlength="3">
+
+                            <p class="text-muted">Minimum 1 minute. Only whole numbers are allowed.</p>
                         </div>
                     </div>
                 </div>
@@ -112,11 +121,53 @@
                             <div class="col-md-6">
                                 <input type="text" class="form-control" id="h_name"
                                        placeholder='Name of extra header.'>
+
+                                <p class="text-muted">Extra Header Name</p>
                             </div>
                             <div class="col-md-6">
                                 <input type="text" class="form-control" id="h_val"
                                        placeholder='Value of extra header'>
+
+                                <p class="text-muted">Extra Header Value</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="panel panel-default">
+
+                    <div class="panel-heading" id="fg_rule">Foreground Page Reload Rule (Experimental feature)</div>
+                    <div class="panel-body">
+
+                        <p>Some websites put session idle time in the browser.
+                            <br>For such sites simple re-requesting url in background may not be enough.
+                            <br>Using this option a small javascript will be injected into every matching url, causing
+                            the page to auto-reload if idling more than set number of minutes.
+                            <br>For example settings this option to reload every 2 minutes will defeat site's own idle
+                            timer
+                            if their own times is set to log you out after 3 minutes of idling.</p>
+
+                        <div class="form-group">
+                            <label for="fg_trigger_uri">Match any url that start with this</label>
+                            <input type="text" class="form-control" id="fg_trigger_uri"
+                                   placeholder="Any request that starts with this uri will be auto-reloading">
+
+                            <p class="text-info">Any url that starts with this url will be set to auto-refresh in set
+                                number of minutes
+                                <br>For example if you set this to "https://mybankportal.com/account/"
+                                <br>Then requests to https://mybankportal.com/account/details and
+                                https://mybankportal.com/account/whatever
+                                <br>will be set to auto-reload
+                            </p>
+
+                        </div>
+
+                        <div class="request_interval">
+                            <label for="fg_interval">Reload matching page after this many minutes of idling</label>
+                            <input type="text" class="form-control" style="width: 4em" id="fg_interval" size="3" maxlength="3">
+
+                            <p class="text-muted">Minimum 1 minute. Only whole numbers are allowed.</p>
                         </div>
                     </div>
                 </div>

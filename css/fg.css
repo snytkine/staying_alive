@@ -12,6 +12,9 @@
     right: 5px;
     width: 25%;
     min-width: 480px;
+    font-size: 14px !important;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    z-index: 2147483647;
 }
 
 #ext_session_alive_reload_prompt h4 {
@@ -49,11 +52,28 @@
 }
 
 #ext_session_alive_reload_prompt > div > div:first-of-type {
+    text-align: left !important;
+    font-size: 14px !important;
     display: block;
     float: left;
     padding-left: 15px;
     padding-right: 15px;
-    width: 75%;
+    width: 65%;
+}
+
+#ext_session_alive_reload_prompt > div > div:first-of-type a, #ext_session_alive_reload_prompt > div > div:first-of-type a:hover, #ext_session_alive_reload_prompt > div > div:first-of-type a:active, #ext_session_alive_reload_prompt > div > div:first-of-type a:visited {
+    color: #69c !important;
+    text-decoration: underline !important;
+    cursor: pointer;
+    display: inline;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    font-style: normal;
+    font-variant: normal;
+    font-weight: normal;
+    height: auto;
+    line-height: 18px;
+    text-align: left;
 }
 
 #ext_session_alive_reload_prompt > div {
@@ -179,10 +199,10 @@
     display: block;
     min-height: 1px;
     float: left;
-    width: 10%;
+    width: 20%;
 }
 
-#ext_session_alive_reload_cancel {
+#ext_session_alive_reload_cancel, #ext_session_alive_reload_cancel:hover, #ext_session_alive_reload_cancel:active {
     display: inline-block;
     padding: 6px 12px;
     margin-bottom: 0;
@@ -203,6 +223,16 @@
     color: #333333;
     background-color: #ffffff;
     border-color: #cccccc;
+    background-image: none;
+
+    font-size: 14px !important;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+    text-decoration: none;
+    text-transform: none;
+
+    -webkit-box-shadow: 1px 1px 0 rgba(0, 0, 0, .25);
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, .25);
 }
 
 #ext_session_alive_reload_cancel:focus {

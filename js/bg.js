@@ -707,7 +707,7 @@ chrome.runtime.onMessage.addListener(
             "from a content script:" + sender.tab.url :
             "from the extension");
         if (request.greeting == "hello")
-            sendResponse({farewell: "goodbye"});
+            sendResponse({val: 1});
     });
 
 initbgpage();
