@@ -176,6 +176,7 @@ DomainRule.prototype.update = function (o) {
     this.fgTimeout = o.fgTimeout || null;
 }
 
+
 /**
  * Check passed uri agains uri, uri/, loopUri, loopUri/
  *

@@ -182,6 +182,44 @@ var isValidResponse = function (oRule, details) {
 }
 
 /**
+ * Loop over all DOMAIN_RULES
+ * and return first rule that has matching
+ * foreground uri
+ *
+ * @param string uri
+ * @returns mixed null|DomainRule object
+ */
+var getForegroundRuleForUrl = function (uri) {
+    var i = 0, dr;
+
+    if (!uri || uri.length === 0) {
+        console.log("Empty string passed to getForegroundRuleForUrl");
+        return false;
+    }
+
+    d("Looking for foreground rule for url " + uri);
+
+    uri = uri.toLocaleLowerCase();
+
+    for (i = 0; i < DOMAIN_RULES.length; i += 1) {
+        dr = DOMAIN_RULES[i];
+
+        if (dr.fgUri !== null) {
+
+            if (uri.length >= dr.fgUri.length) {
+                if (uri.indexOf(dr.fgUri) === 0) {
+                    console.log("Matched rule " + dr.ruleName);
+
+                    return dr;
+                }
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
  * Format all request headers
  * and return multi-line string with
  * one header:value per line
@@ -563,6 +601,15 @@ var initbgpage = function (reload) {
         var myHref, oUri, views, view, oRule, url = details.url;
 
         /**
+         * Experimental injection of css and js
+         */
+        if (details.type == "main_frame" && details.tabId >= 0) {
+            d("Request is from main_frame");
+            chrome.tabs.insertCSS(details.tabId, {file: "css/fg.css"});
+            chrome.tabs.executeScript(details.tabId, {file: "js/fg.js", runAt: "document_idle"});
+        }
+
+        /**
          * Remove ccn cookie if request is mylog
          * this is to prevent overriding the CodeIgniter security csfr cookie by simply
          * looking at the logs
@@ -571,16 +618,6 @@ var initbgpage = function (reload) {
             d("request is mylog")
             removeCookie(details, "ccn");
         } else {
-
-            /**
-             * Experimental injection of css and js
-             */
-
-            if (details.type == "main_frame") {
-                chrome.tabs.insertCSS(details.tabId, {file: "css/fg.css"});
-                chrome.tabs.executeScript(details.tabId, {file: "js/fg.js", runAt : "document_idle"});
-            }
-
             oRule = getDomainRuleForUri(url);
 
             if (oRule) {
@@ -607,7 +644,7 @@ var initbgpage = function (reload) {
 
                 d('responseHeaders: ' + printHeaders(details.responseHeaders));
                 removeCacheHeaders(details);
-                // new
+
                 /**
                  * If call NOT from tab (from background script)
                  */
@@ -640,17 +677,6 @@ var initbgpage = function (reload) {
                      * schedule it to run in background
                      */
                     d("Rule matches for url: " + url + ". requestInterval: " + oRule.requestInterval);
-                    /**
-                     * @todo in future release may inject reloader into html page
-                     * Inject script into html
-                     */
-                        //chrome.tabs.executeScript(details.tabId, {
-                        //    code: 'setTimeout(function () { console.log("reloading... " + window.location.href); /* location.reload(); */}, 10 * 1000)',
-                        //    runAt: 'document_start'
-                        //}, function(){
-                        //    d("Injected script to page");
-                        //});
-
 
                     addToCallsInProgress(oRule, details.tabId);
                 }
@@ -674,6 +700,10 @@ var initbgpage = function (reload) {
     chrome.tabs.onRemoved.addListener(handleTabClose);
 }
 
+/**
+ * When the extension is installed
+ * open new tab with settings
+ */
 chrome.runtime.onInstalled.addListener(function (details) {
     var thisVersion;
     if (details.reason == "install") {
@@ -687,27 +717,19 @@ chrome.runtime.onInstalled.addListener(function (details) {
 
 /**
  * The content script will query this page
- * will use sender.tab.url
- * lookup foreground rule for it
- * and return object like {val: 5}
- * where 5 is 5 minutes...
- * When injected content script receives
- * response message with val > 0
- * it will initiate the reload interval (start the dance)
- *
- * We should not try to match foreground rule
- * on headersReceived instead just inject the content script
- * to every page, then the first thing the script does is
- * queries this process and only if it gets the response it
- * will initiate
+ * looking for object fgRule with ruleId and reloadVal values
  */
 chrome.runtime.onMessage.addListener(
-    function(request, sender, sendResponse) {
-        console.log(sender.tab ?
-            "from a content script:" + sender.tab.url :
-            "from the extension");
-        if (request.greeting == "hello")
-            sendResponse({val: 1});
+    function (request, sender, sendResponse) {
+        var oRule;
+        console.log("Received some message");
+        if (sender.tab && request.getConfig && request.getConfig == "fgRule") {
+            oRule = getForegroundRuleForUrl(sender.tab.url);
+            if (oRule) {
+                console.log("Foreground Rule for " + sender.tab.url + " found. " + oRule.ruleName);
+                sendResponse({fgRule: { reloadVal: oRule.fgTimeout, ruleId: oRule.id}});
+            }
+        }
     });
 
 initbgpage();

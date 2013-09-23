@@ -151,7 +151,7 @@ var showProcs = function renderTable(procs) {
             rr = procs.hashMap[p]
             dr = rr['rule'];
             show_running += '<tr id="' + dr.id + '" start_time="' + rr.initTime + '">';
-            show_running += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + dr.getLoopUri() + '"><a href="settings.html?id='+dr.id+'" target="_settings">' + dr.ruleName + '</a></span></td>';
+            show_running += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + dr.getLoopUri() + '"><a href="settings.html?id='+dr.id+'" target="_rule_settings">' + dr.ruleName + '</a></span></td>';
             show_running += '<td class="rule_interval">' + formatInterval(dr.getInterval(), "m") + '</td>';
             show_running += '<td class="next_run">' + formatInterval(rr.getNextRunTime()) + '</td>';
             show_running += '<td><span class="counter">' + rr.counter + '</span></td>';
@@ -195,7 +195,7 @@ var updateTable = function (procs) {
                  */
                 tr = "";
                 tr += '<tr id="' + dr.id + '" start_time="' + rr.initTime + '">';
-                tr += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + dr.getLoopUri() + '"><a href="settings.html?id='+dr.id+'" target="_settings">' + dr.ruleName + '</a></span></td>';
+                tr += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + dr.getLoopUri() + '"><a href="settings.html?id='+dr.id+'" target="_rule_settings">' + dr.ruleName + '</a></span></td>';
                 tr += '<td class="rule_interval">' + formatInterval(dr.getInterval(), "m") + '</td>';
                 tr += '<td class="next_run">' + formatInterval(rr.getNextRunTime()) + '</td>';
                 tr += '<td><span class="counter">' + rr.counter + '</span></td>';
