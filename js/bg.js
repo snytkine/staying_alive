@@ -61,12 +61,26 @@
  {urls: ["<all_urls>"]},["responseHeaders","blocking"]);
  */
 
+
 /**
- * @todo add ability to add extra headers for background requests
- * By default remove X-Requested-With using some option in jQ (looks like it's not set anyway when using $.get() way...)
+ * Foreground rules logic
+ *
+ if url undefined then it is the same as before - do nothing
+ if changed - check if foregroundRule is running for this tab
+ if yes and it does not match the uri then remove it from runningForegroundRules
+ remove pageAction icon.
+
+ if match update count? No count is updated from inside content script via message.
+
+ RunningForegroundRules - can be just regular js object.
+ RunningForegroundRule (Rule, count, nextReloadTime, tabId)
+
+ RunningForegroundRule constructor
+ automatically sets this.nextReload based on Rule's timeout value
+ has counter, nextReloadTime, tabId
  */
 
-var runningProcs, iconImg, oData = {}, DOMAIN_RULES = [];
+var runningProcs, iconImg, oData = {}, DOMAIN_RULES = [], foregroundRules = {};
 
 iconImg = document.createElement('img');
 iconImg.src = 'img/24/geek_zombie_24.png';
@@ -181,6 +195,45 @@ var isValidResponse = function (oRule, details) {
     return ret;
 }
 
+var isValidTabid = function (tabId) {
+    /**
+     * @todo find if tab with this id exists in chrome
+     * probably need to get all tabs and loop over them
+     */
+    return true;
+}
+
+/**
+ * Flow of calls:
+ *
+ * 1. onUpdated event fired with 'loading' status:
+ * handleTabUpdate::tabId 173 status: loading url: undefined <- url has not changed
+ * If url is changed then url will not be undefined.
+ * Also the url in tab object is always present.
+ *
+ * 2. content script is injected into page,
+ * message received from content script here
+ * Attempting to find foreground rule by uri
+ *
+ * 3. another onUpdatedEvent fired with 'complete' status
+ * handleTabUpdate::tabId 173 status: complete url: undefined
+ *
+ * If url changed - check if fg rule for that tabId exists
+ * and should be removed.
+ * (in most cases should be remove, but not always. For example
+ * if user navigated to different url but it still matching the rule then don't remove)
+ *
+ * If Rule is removed then also hide pageAction icon and reset title, popup, etc.
+ *
+ * @param tabId
+ * @param changeInfo
+ * @param tab
+ */
+var handleTabUpdate = function (tabId, changeInfo, tab) {
+    d("handleTabUpdate::tabId " + tabId + " status: " + changeInfo.status + " url: " + changeInfo.url);
+    d("handleTabUpdate Tab id: " + tab.id + " status: " + tab.status + " url: " + tab.url + " active: " + tab.active);
+}
+
 /**
  * Loop over all DOMAIN_RULES
  * and return first rule that has matching
@@ -204,18 +257,124 @@ var getForegroundRuleForUrl = function (uri) {
     for (i = 0; i < DOMAIN_RULES.length; i += 1) {
         dr = DOMAIN_RULES[i];
 
-        if (dr.fgUri !== null) {
+        if (dr.isForegroundMatch(uri)) {
+            return dr;
+        }
+        /*if (dr.fgUri !== null) {
 
-            if (uri.length >= dr.fgUri.length) {
-                if (uri.indexOf(dr.fgUri) === 0) {
-                    console.log("Matched rule " + dr.ruleName);
+         if (uri.length >= dr.fgUri.length) {
+         if (uri.indexOf(dr.fgUri) === 0) {
+         console.log("Matched rule " + dr.ruleName);
 
-                    return dr;
-                }
+         return dr;
+         }
+         }
+         }*/
+    }
+
+    return null;
+}
+
+/**
+ * Updated foregroundRules object for a specific rule
+ * if rule already in foregroundRules
+ * or add new rule to foregroundRules
+ *
+ * @param rule
+ * @param tabId
+ */
+var updateForegroundRules = function (rule, tabId) {
+    var id;
+    if (null === oRule || (typeof oRule !== 'object')) {
+        throw Error("updateForegroundRules parameter must be instance of DomainRule");
+    }
+
+    d("updateForegroundRules rule " + rule.ruleName + " tabId: " + tabId);
+    id = rule.id;
+    if (foregroundRules.hasOwnProperty(id)) {
+        d("updateForegroundRules. Rule is already running: " + rule.ruleName + " tabId: " + tabId);
+        foregroundRules[id].update();
+
+    } else {
+        foregroundRules[id] = new RunningForegroundRule(rule, tabId);
+        d("updateForegroundRules. Added foreground rule: " + rule.ruleName + " tabId: " + tabId);
+    }
+
+    /**
+     * @todo add pageAction icon and set icon text and link for tabId
+     */
+}
+
+var removeForegroundRule = function (rule) {
+    var tabId, id = rule.id;
+    if (foregroundRules.hasOwnProperty(id)) {
+        d("removeForegroundRule for rule: " + rule.ruleName);
+
+        tabId = foregroundRules[id]['tabId'];
+        /**
+         * hide browserAction icon for tab
+         */
+        delete(foregroundRules[id]);
+        /**
+         * @todo if tabId exists in browser
+         * hide icon and unset title of text
+         */
+    } else {
+        d("removeForegroundRule Rule " + rule.ruleName + " is not in the foregroundRules");
+    }
+}
+
+/**
+ * Given a value of tabId find RunningForegroundRule
+ * in foregroundRules object and remove rule from foregroundRules
+ * This function will be called when tab is closed
+ *
+ * @param tabId
+ */
+var removeForegroundRuleByTabId = function (tabId) {
+    var foundId;
+    for (var id in foregroundRules) {
+        if (foregroundRules.hasOwnProperty(id)) {
+            if (foregroundRules[id]['tabId'] === tabId) {
+                foundId = id;
+                d("Found Running Foreground rule by tabId: " + tabId + " rule: " + foregroundRules[foundId]['rule']['ruleName']);
+                break;
             }
         }
     }
 
+    if (foundId) {
+        delete(foregroundRules[foundId]);
+    }
+}
+
+/**
+ * Find DomainRule is foregroundRules object by given tabId
+ * This function is called when url in tab is changed
+ * Then we need to find - do we have running foreground rule for this tab?
+ * if yes then we will try to match the new url agains this rule
+ * to see if it still matches.
+ * if not then we will remove the rule from foregroundRules and remove
+ * pageAction icon from tab.
+ *
+ * @param tabId
+ * @returns mixed DomainRule | null
+ */
+var getForegroundRuleByTabId = function (tabId) {
+
+    d("Looking for foregroundRule for tab: " + tabId);
+    for (var id in foregroundRules) {
+        if (foregroundRules.hasOwnProperty(id)) {
+            if (foregroundRules[id]['tabId'] === tabId) {
+                d("foreground rule found for tabId " + tabId + " rule: " + foregroundRules[id]['rule']['ruleName']);
+
+                return foregroundRules[id]['rule'];
+            }
+        }
+    }
+
+    d("foreground rule not found for tabId " + tabId);
+    
     return null;
 }
 
@@ -251,7 +410,13 @@ var removeCookie = function (details, name) {
     name += "=";
     d("Trying to remove cookie: " + name);
     details.responseHeaders.forEach(function (v, i, a) {
-        if (v.name == "Set-Cookie" && v.value.indexOf(name) !== -1) {
+
+        /**
+         * Normalize header name to lower case
+         * to account for possible different variations
+         */
+        var hName = v.name.toLowerCase();
+        if (hName == "set-cookie" && v.value.indexOf(name) !== -1) {
             d("removing " + name + " cookie: " + v.value);
             details.responseHeaders.splice(i, 1);
             removed = true;
@@ -604,7 +769,11 @@ var initbgpage = function (reload) {
          * Experimental injection of css and js
          */
         if (details.type == "main_frame" && details.tabId >= 0) {
-            d("Request is from main_frame");
+            d("Request is from main_frame for url: " + url + " tabId: " + details.tabId);
+            /**
+             * @todo check if tabId exists in tabs, otherwise will get js error
+             * if trying to inject into tab that does not exist
+             */
             chrome.tabs.insertCSS(details.tabId, {file: "css/fg.css"});
             chrome.tabs.executeScript(details.tabId, {file: "js/fg.js", runAt: "document_idle"});
         }
@@ -698,6 +867,7 @@ var initbgpage = function (reload) {
     }
     chrome.webRequest.onHeadersReceived.addListener(requestListener, {urls: ["<all_urls>"], types: ["main_frame", "xmlhttprequest"]}, ["responseHeaders", "blocking"]);
     chrome.tabs.onRemoved.addListener(handleTabClose);
+    chrome.tabs.onUpdated.addListener(handleTabUpdate);
 }
 
 /**
@@ -728,6 +898,7 @@ chrome.runtime.onMessage.addListener(
             if (oRule) {
                 console.log("Foreground Rule for " + sender.tab.url + " found. " + oRule.ruleName);
                 sendResponse({fgRule: { reloadVal: oRule.fgTimeout, ruleId: oRule.id}});
+                updateForegroundRules(oRule, sender.tab.id);
             }
         }
     });
