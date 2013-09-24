@@ -173,12 +173,12 @@ DomainRule.prototype.update = function (o) {
     this.extraHeader = o.extraHeader || null;
 
     this.fgUri = (o.fgUri) ? o.fgUri.toLocaleLowerCase() : null;
-    this.fgTimeout = o.fgTimeout || null;
+    this.fgTimeout = o.fgTimeout || 1;
 }
 
 
 /**
- * Check passed uri agains uri, uri/, loopUri, loopUri/
+ * Check passed uri against uri, uri/, loopUri, loopUri/
  *
  * @param uri string
  * @returns boolean
@@ -192,6 +192,31 @@ DomainRule.prototype.isUriMatch = function (uri) {
     ret = uri === this.uri || (uri === (this.uri + '/') ) || uri === this.loopUri || (uri === (this.loopUri + '/') );
 
     return !!ret;
+}
+
+
+/**
+ * Test if passed uri string matches a foreground rule
+ *
+ * @param string uri
+ * @returns {boolean} true if passed uri is a match for this
+ * rule's foreground rule
+ */
+DomainRule.prototype.isForegroundMatch = function (uri) {
+
+    if (!this.fgUri || !this.fgTimeout) {
+
+        return false;
+    }
+
+    if (uri.length >= this.fgUri.length) {
+        if (uri.indexOf(this.fgUri) === 0) {
+
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -239,13 +264,13 @@ DomainRule.prototype.getInterval = function () {
 DomainRule.prototype.toString = function () {
     var ret = "";
 
-    ret = JSON.stringify(this, ["uri", "ruleName", "loopUri", "requestInterval"])
+    ret = JSON.stringify(this, ["uri", "ruleName", "loopUri", "requestInterval", "fgUri"])
 
     return ret;
 }
 
 DomainRule.prototype.hashCode = function () {
-    var ret = CryptoJS.SHA1(this.uri + this.loopUri);
+    var ret = CryptoJS.SHA1(this.uri + this.loopUri + this.fgUri);
 
     return ret.toString(CryptoJS.enc.Hex);
 }
@@ -332,6 +357,41 @@ RunningRule.prototype.getNextRunTime = function () {
 
 // end RunningRule
 
+
+var RunningForegroundRule = function (rule, tabId) {
+    this.rule = rule;
+    this.tabId = parseInt(tabId, 10);
+    /**
+     * Number of times rule was executed
+     * @type {number}
+     */
+    this.counter = 0;
+
+    /**
+     * Time when this object was created
+     * @type number milliseconds
+     */
+    this.initTime = (new Date()).getTime();
+
+    this.nextReloadTime = this.initTime + (rule.fgTimeout * 60000);
+}
+
+RunningForegroundRule.prototype.update = function () {
+    var ts = (new Date()).getTime();
+    this.counter += 1;
+    this.nextReloadTime = ts + this.rule.fgTimeout * 60000;
+}
+
+/**
+ * Get number of milliseconds till next scheduled page reload
+ *
+ * @returns {number}
+ */
+RunningForegroundRule.prototype.getNextRunTime = function () {
+    var ts = Date.now();
+
+    return this.nextReloadTime - ts;
+}
 
 /**
  * Storage object that holds
