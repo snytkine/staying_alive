@@ -289,6 +289,109 @@ var updateForegroundRules = function (rule, tabId) {
         throw Error("updateForegroundRules parameter must be instance of DomainRule");
     }
 
+    d("updateForegroundRules rule " + rule.ruleName + " tabId: " + tabId);
+    id = rule.id;
+    if (foregroundRules.hasOwnProperty(id)) {
+        d("updateForegroundRules. Rule is already running: " + rule.ruleName + " tabId: " + tabId);
+        foregroundRules[id].update();
+
+    } else {
+        foregroundRules[id] = new RunningForegroundRule(rule, tabId);
+        d("updateForegroundRules. Added foreground rule: " + rule.ruleName + " tabId: " + tabId);
+    }
+
+    /**
+     * @todo add pageAction icon and set icon text and link for tabId
+     */
+}
+
+var removeForegroundRule = function (rule) {
+    var tabId, id = rule.id;
+    if (foregroundRules.hasOwnProperty(id)) {
+        d("removeForegroundRule for rule: " + rule.ruleName);
+
+        tabId = foregroundRules[id]['tabId'];
+        /**
+         * hide browserAction icon for tab
+         */
+        delete(foregroundRules[id]);
+        /**
+         * @todo if tabId exists in browser
+         * hide icon and unset title of text
+         */
+    } else {
+        d("removeForegroundRule Rule " + rule.ruleName + " is not in the foregroundRules");
+    }
+}
+
+/**
+ * Given a value of tabId find RunningForegroundRule
+ * in foregroundRules object and remove rule from foregroundRules
+ * This function will be called when tab is closed
+ *
+ * @param tabId
+ */
+var removeForegroundRuleByTabId = function (tabId) {
+    var foundId;
+    for (var id in foregroundRules) {
+        if (foregroundRules.hasOwnProperty(id)) {
+            if (foregroundRules[id]['tabId'] === tabId) {
+                foundId = id;
+                d("Found Running Foreground rule by tabId: " + tabId + " rule: " + foregroundRules[foundId]['rule']['ruleName']);
+                break;
+            }
+        }
+    }
+
+    if (foundId) {
+        delete(foregroundRules[foundId]);
+    }
+}
+
+/**
+ * Find DomainRule is foregroundRules object by given tabId
+ * This function is called when url in tab is changed
+ * Then we need to find - do we have running foreground rule for this tab?
+ * if yes then we will try to match the new url agains this rule
+ * to see if it still matches.
+ * if not then we will remove the rule from foregroundRules and remove
+ * pageAction icon from tab.
+ *
+ * @param tabId
+ * @returns mixed DomainRule | null
+ */
+var getForegroundRuleByTabId = function (tabId) {
+
+    d("Looking for foregroundRule for tab: " + tabId);
+    for (var id in foregroundRules) {
+        if (foregroundRules.hasOwnProperty(id)) {
+            if (foregroundRules[id]['tabId'] === tabId) {
+                d("foreground rule found for tabId " + tabId + " rule: " + foregroundRules[id]['rule']['ruleName']);
+
+                return foregroundRules[id]['rule'];
+            }
+        }
+    }
+
+    d("foreground rule not found for tabId " + tabId);
+    
+    return null;
+}
+
+/**
+ * Updated foregroundRules object for a specific rule
+ * if rule already in foregroundRules
+ * or add new rule to foregroundRules
+ *
+ * @param rule
+ * @param tabId
+ */
+var updateForegroundRules = function (rule, tabId) {
+    var id;
+    if (null === oRule || (typeof oRule !== 'object')) {
+        throw Error("updateForegroundRules parameter must be instance of DomainRule");
+    }
+
     id = rule.id;
     if (foregroundRules.hasOwnProperty(id)) {
         d("updateForegroundRules. Rule is already running: " + rule.ruleName + " tabId: " + tabId);
@@ -841,6 +944,7 @@ chrome.runtime.onMessage.addListener(
             if (oRule) {
                 console.log("Foreground Rule for " + sender.tab.url + " found. " + oRule.ruleName);
                 sendResponse({fgRule: { reloadVal: oRule.fgTimeout, ruleId: oRule.id}});
+                updateForegroundRules(oRule, sender.tab.id);
             }
         }
     });
