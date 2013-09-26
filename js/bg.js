@@ -260,20 +260,11 @@ var getForegroundRuleForUrl = function (uri) {
         if (dr.isForegroundMatch(uri)) {
             return dr;
         }
-        /*if (dr.fgUri !== null) {
-
-         if (uri.length >= dr.fgUri.length) {
-         if (uri.indexOf(dr.fgUri) === 0) {
-         console.log("Matched rule " + dr.ruleName);
-
-         return dr;
-         }
-         }
-         }*/
     }
 
     return null;
 }
+
 
 /**
  * Updated foregroundRules object for a specific rule
@@ -285,11 +276,10 @@ var getForegroundRuleForUrl = function (uri) {
  */
 var updateForegroundRules = function (rule, tabId) {
     var id;
-    if (null === oRule || (typeof oRule !== 'object')) {
+    if (null === rule || (typeof rule !== 'object')) {
         throw Error("updateForegroundRules parameter must be instance of DomainRule");
     }
 
-    d("updateForegroundRules rule " + rule.ruleName + " tabId: " + tabId);
     id = rule.id;
     if (foregroundRules.hasOwnProperty(id)) {
         d("updateForegroundRules. Rule is already running: " + rule.ruleName + " tabId: " + tabId);
@@ -301,9 +291,11 @@ var updateForegroundRules = function (rule, tabId) {
     }
 
     /**
-     * @todo add pageAction icon and set icon text and link for tabId
+     * @todo
+     * update count of rules badge on browserAction
      */
 }
+
 
 var removeForegroundRule = function (rule) {
     var tabId, id = rule.id;
@@ -316,8 +308,8 @@ var removeForegroundRule = function (rule) {
          */
         delete(foregroundRules[id]);
         /**
-         * @todo if tabId exists in browser
-         * hide icon and unset title of text
+         * @todo update badge on browserAction
+         *
          */
     } else {
         d("removeForegroundRule Rule " + rule.ruleName + " is not in the foregroundRules");
@@ -374,38 +366,10 @@ var getForegroundRuleByTabId = function (tabId) {
     }
 
     d("foreground rule not found for tabId " + tabId);
-    
+
     return null;
 }
 
-/**
- * Updated foregroundRules object for a specific rule
- * if rule already in foregroundRules
- * or add new rule to foregroundRules
- *
- * @param rule
- * @param tabId
- */
-var updateForegroundRules = function (rule, tabId) {
-    var id;
-    if (null === oRule || (typeof oRule !== 'object')) {
-        throw Error("updateForegroundRules parameter must be instance of DomainRule");
-    }
-
-    id = rule.id;
-    if (foregroundRules.hasOwnProperty(id)) {
-        d("updateForegroundRules. Rule is already running: " + rule.ruleName + " tabId: " + tabId);
-        foregroundRules[id].update();
-
-    } else {
-        foregroundRules[id] = new RunningForegroundRule(rule, tabId);
-        d("updateForegroundRules. Added foreground rule: " + rule.ruleName + " tabId: " + tabId);
-    }
-
-    /**
-     * @todo add pageAction icon and set icon text and link for tabId
-     */
-}
 
 var removeForegroundRule = function (rule) {
     var tabId, id = rule.id;
@@ -939,14 +903,36 @@ chrome.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
         var oRule;
         console.log("Received some message");
-        if (sender.tab && request.getConfig && request.getConfig == "fgRule") {
-            oRule = getForegroundRuleForUrl(sender.tab.url);
-            if (oRule) {
-                console.log("Foreground Rule for " + sender.tab.url + " found. " + oRule.ruleName);
-                sendResponse({fgRule: { reloadVal: oRule.fgTimeout, ruleId: oRule.id}});
-                updateForegroundRules(oRule, sender.tab.id);
+        if (sender.tab) {
+
+            if (request.getConfig && request.getConfig == "fgRule") {
+                oRule = getForegroundRuleForUrl(sender.tab.url);
+                if (oRule) {
+                    console.log("Foreground Rule for " + sender.tab.url + " found. " + oRule.ruleName);
+                    sendResponse({fgRule: { reloadVal: oRule.fgTimeout, ruleId: oRule.id}});
+                    updateForegroundRules(oRule, sender.tab.id);
+                }
             }
         }
-    });
+    }
+);
+
+/**
+ * Listener for clicks on pageAction icon
+ * pageAction icon is set when tab has foreground rule
+ * associated with its page (page scheduled to reload)
+ * Clicking on pageAction icon should take
+ * use to settings page for that rule
+ * and set the settings tab active
+ */
+/*chrome.pageAction.onClicked.addListener(function (oTab) {
+    var settingsUrl, oRule = getForegroundRuleByTabId(oTab.id);
+    console.log("Clicked on pageAction icon in tab " + oTab.id);
+    if(oRule){
+        settingsUrl = "settings.html?id=" + oRule.id ;
+        chrome.tabs.create({url: settingsUrl});
+    }
+
+})*/
 
 initbgpage();
