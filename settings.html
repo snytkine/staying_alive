@@ -131,6 +131,7 @@
                                 <p class="text-muted">Extra Header Value</p>
                             </div>
                         </div>
+                        <p class="text-muted">Extra header only sent in background requests. Not send in foreground rules (page reloads)</p>
                     </div>
                 </div>
 
@@ -149,7 +150,7 @@
                             if their own times is set to log you out after 3 minutes of idling.</p>
 
                         <div class="form-group">
-                            <label for="fg_trigger_uri">Match any url that start with this</label>
+                            <label for="fg_trigger_uri">Auto-Reload Url. Match any url that start with this string</label>
                             <input type="text" class="form-control" id="fg_trigger_uri"
                                    placeholder="Any request that starts with this uri will be auto-reloading">
 

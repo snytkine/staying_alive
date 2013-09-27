@@ -37,7 +37,8 @@
  */
 (function () {
 
-    var ruleId,
+    var isCancelled = false,
+        ruleId,
         init,
         showCountdownAlert,
         stopReload,
@@ -90,11 +91,21 @@
                 updateCounter(seconds - 1);
             }, 1000);
         } else {
-            if (alertDiv.style.display !== "none") {
+            if (alertDiv.style.display !== "none" && !isCancelled) {
                 /**
                  * Reload page
+                 * but first notify background process
+                 *
+                 * @todo can examine resp object
+                 * and see if whould really reload
+                 * of maybe it was already cancelled in background process somehow,
+                 * in which case can set isCancelled and hide alert
                  */
-                window.location.reload(true);
+                chrome.runtime.sendMessage({reloading: ruleId}, function (resp) {
+                    console.log("Doing window reload");
+                    window.location.reload(true);
+                });
+
             }
         }
     }
@@ -125,7 +136,10 @@
             alertDiv.style.display = "none";
             /**
              * Re-schedule alert to reappear in 1 minute
+             * Notify the backbround process about this extra minute added
              */
+            chrome.runtime.sendMessage({ruleId: ruleId, updateTime: 90});
+
             startCountdownToAlert(60);
         }
     }
@@ -177,6 +191,21 @@
                 }
             }
         });
+
+
+        chrome.runtime.onMessage.addListener(
+            function (request, sender, sendResponse) {
+                console.log("Received some message");
+                if (!sender.tab) {
+
+                    if (request.stopRule && request.stopRule == ruleId) {
+                        isCancelled = true;
+                        alertDiv.style.display = "none";
+                        console.log("Ccancelled reload for this rule " + ruleId);
+                    }
+                }
+            }
+        );
     }
 
     init();

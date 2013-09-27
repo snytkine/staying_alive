@@ -34,6 +34,7 @@ var d = function (s) {
     console.log("[" + (new Date().toLocaleTimeString()) + "] " + s);
 }
 
+
 // parseUri 1.2.2
 // (c) Steven Levithan <stevenlevithan.com>
 // MIT License
@@ -150,7 +151,7 @@ var DomainRule = function (o) {
     this.extraHeader = o.extraHeader || null;
 
     this.fgUri = (o.fgUri) ? o.fgUri.toLocaleLowerCase() : null;
-    this.fgTimeout = o.fgTimeout || null;
+    this.fgTimeout = o.fgTimeout || 1;
 }
 
 /**
@@ -348,7 +349,7 @@ RunningRule.prototype.incrementCounter = function () {
  * @returns {number}
  */
 RunningRule.prototype.getNextRunTime = function () {
-    var ret, ts = Date.now();
+    var ret, ts = (new Date()).getTime();
     var lastRun = (this.latestTime > 0) ? this.latestTime : this.initTime;
     ret = lastRun + (this.rule.getInterval() * 60 * 1000) - ts;
 
@@ -376,10 +377,33 @@ var RunningForegroundRule = function (rule, tabId) {
     this.nextReloadTime = this.initTime + (rule.fgTimeout * 60000);
 }
 
+
 RunningForegroundRule.prototype.update = function () {
     var ts = (new Date()).getTime();
     this.counter += 1;
-    this.nextReloadTime = ts + this.rule.fgTimeout * 60000;
+    //this.nextReloadTime = ts + this.rule.fgTimeout * 60000;
+}
+
+/**
+ * Update value of nextReloadTime
+ * If argument is passed (will be number of seconds) then set the value by
+ * adding number of seconds (convert to milliseconds first ) to current timestamp
+ * if argument not passed
+ * then add number of minutes converted to milliseconds
+ *
+ * @param int t number of seconds (from now) till the next page reload
+ */
+RunningForegroundRule.prototype.setNextReloadTime = function (t) {
+
+    var ts = (new Date()).getTime();
+    if (t) {
+        if (typeof t !== 'number') {
+            throw new Error("RunningForegroundRule::setNextReloadTime param t must be a number");
+        }
+        this.nextReloadTime = ts + t * 1000;
+    } else {
+        this.nextReloadTime = ts + this.rule.fgTimeout * 60000;
+    }
 }
 
 /**
@@ -388,7 +412,7 @@ RunningForegroundRule.prototype.update = function () {
  * @returns {number}
  */
 RunningForegroundRule.prototype.getNextRunTime = function () {
-    var ts = Date.now();
+    var ts = (new Date()).getTime();
 
     return this.nextReloadTime - ts;
 }

@@ -98,7 +98,7 @@ runningProcs = new RunningRules();
 var addHeader = function (url, allHeaders) {
     var sent = 0, i, j, ret = [], aExtraHeaders, myIcon, hostname, aHosts, domain, mydomain = false;
 
-    chrome.browserAction.setTitle({title: BADGE_TITLE});
+    //chrome.browserAction.setTitle({title: BADGE_TITLE});
 
     /**
      * Get stored Data
@@ -161,11 +161,49 @@ var addHeader = function (url, allHeaders) {
         d(sent + " Extra Header" + ((sent > 1) ? 's' : ''));
         myIcon = IconCreator.paintIcon(iconImg, '#0000FF');
         d('myIcon: ' + myIcon);
-        chrome.browserAction.setIcon({imageData: myIcon});
-        chrome.browserAction.setTitle({title: sent + " Extra Header" + ((sent > 1) ? 's' : '')});
+        //chrome.browserAction.setIcon({imageData: myIcon});
+        //chrome.browserAction.setTitle({title: sent + " Extra Header" + ((sent > 1) ? 's' : '')});
     }
 
     return ret;
+}
+
+
+/**
+ * Send the message to content script that is running
+ * in the specified tab. Message will contain object
+ * {stopRule: ruleId}
+ *
+ * The listener in the content script will then
+ * hides reload countdown and will prevent
+ * any reloads that may already been scheduled;
+ *
+ * @param tabId
+ */
+var cancelContentScript = function (tabId, ruleId) {
+    if (typeof tabId !== 'number') {
+        throw new Error("cancelContentScript tabId param must be a number");
+    }
+
+    if (typeof ruleId !== 'number') {
+        throw new Error("cancelContentScript ruleId param must be a number");
+    }
+
+    /**
+     * Make sure tab with this tabId exists, otherwise
+     * we will get JavaScript error when trying to send message to
+     * non-existent tab
+     */
+    chrome.tabs.get(tabId, function (oTab) {
+
+            if (oTab && oTab.id) {
+                d("cancelContentScript :: Sending stopRule message to tab " + tabId);
+                chrome.tabs.sendMessage(tabId, {stopRule: ruleId});
+            } else {
+                colsole.log("cancelContentScript tab with id " + tabId + " does not exist");
+            }
+        }
+    );
 }
 
 /**
@@ -195,13 +233,6 @@ var isValidResponse = function (oRule, details) {
     return ret;
 }
 
-var isValidTabid = function (tabId) {
-    /**
-     * @todo find if tab with this id exists in chrome
-     * probably need to get all tabs and loop over them
-     */
-    return true;
-}
 
 /**
  * Flow of calls:
@@ -262,7 +293,31 @@ var getForegroundRuleForUrl = function (uri) {
         }
     }
 
+    d("No foregroudn rules matched for " + uri);
     return null;
+}
+
+/**
+ * Update the value of counter on browser badge
+ */
+var updateBrowserBadge = function () {
+    var e, counter = 0;
+    counter = runningProcs.size();
+    for (e in foregroundRules) {
+        if (foregroundRules.hasOwnProperty(e)) {
+            counter += 1;
+        }
+    }
+
+    if (counter < 1) {
+        counter = "";
+    } else {
+        counter = counter.toString();
+    }
+
+    d("Counter of running rules: " + counter);
+
+    chrome.browserAction.setBadgeText({text: counter});
 }
 
 
@@ -270,30 +325,31 @@ var getForegroundRuleForUrl = function (uri) {
  * Updated foregroundRules object for a specific rule
  * if rule already in foregroundRules
  * or add new rule to foregroundRules
+ * This function is called after the content script
+ * sends a message asking to match the url against
+ * foreground rule and only if we got a match
  *
  * @param rule
  * @param tabId
  */
 var updateForegroundRules = function (rule, tabId) {
-    var id;
+    var id, fgRule;
     if (null === rule || (typeof rule !== 'object')) {
         throw Error("updateForegroundRules parameter must be instance of DomainRule");
     }
 
     id = rule.id;
     if (foregroundRules.hasOwnProperty(id)) {
+        fgRule = foregroundRules[id];
         d("updateForegroundRules. Rule is already running: " + rule.ruleName + " tabId: " + tabId);
-        foregroundRules[id].update();
-
+        //foregroundRules[id].update();
     } else {
-        foregroundRules[id] = new RunningForegroundRule(rule, tabId);
+        fgRule = new RunningForegroundRule(rule, tabId);
+        foregroundRules[id] = fgRule;
         d("updateForegroundRules. Added foreground rule: " + rule.ruleName + " tabId: " + tabId);
+        updateBrowserBadge();
     }
 
-    /**
-     * @todo
-     * update count of rules badge on browserAction
-     */
 }
 
 
@@ -307,10 +363,7 @@ var removeForegroundRule = function (rule) {
          * hide browserAction icon for tab
          */
         delete(foregroundRules[id]);
-        /**
-         * @todo update badge on browserAction
-         *
-         */
+        updateBrowserBadge();
     } else {
         d("removeForegroundRule Rule " + rule.ruleName + " is not in the foregroundRules");
     }
@@ -337,6 +390,7 @@ var removeForegroundRuleByTabId = function (tabId) {
 
     if (foundId) {
         delete(foregroundRules[foundId]);
+        updateBrowserBadge();
     }
 }
 
@@ -370,23 +424,6 @@ var getForegroundRuleByTabId = function (tabId) {
     return null;
 }
 
-
-var removeForegroundRule = function (rule) {
-    var tabId, id = rule.id;
-    if (foregroundRules.hasOwnProperty(id)) {
-        d("removeForegroundRule for rule: " + rule.ruleName);
-
-        tabId = foregroundRules[id]['tabId'];
-        /**
-         * hide browserAction icon for tab
-         */
-        delete(foregroundRules[id]);
-        /**
-         * @todo if tabId exists in browser
-         * hide icon and unset title of text
-         */
-    }
-}
 
 /**
  * Format all request headers
@@ -498,11 +535,7 @@ var addToCallsInProgress = function (oRule, fromTabId) {
 
     if (runningProcs.addRule(new RunningRule(oRule, fromTabId))) {
         scheduleRule(oRule);
-        counter = (counter + 1).toString();
-        d("Counter of running rules: " + (counter));
-
-        chrome.browserAction.setBadgeText({text: counter})
-        chrome.browserAction.setTitle({title: oRule.ruleName + " tab: " + fromTabId});
+        updateBrowserBadge();
     } else {
         d("Rule not added. Possible because same rule already exists in runningProcs");
     }
@@ -525,13 +558,7 @@ var removeRunningRule = function (oRule) {
     }
 
     removeRunningRuleById(oRule.id);
-
-    counter = runningProcs.size();
-    if (counter < 1) {
-        counter = "";
-    }
-
-    chrome.browserAction.setBadgeText({text: counter.toString()});
+    updateBrowserBadge();
 }
 
 var removeRunningRuleByHash = function (hash) {
@@ -542,13 +569,7 @@ var removeRunningRuleByHash = function (hash) {
     if (runningProcs.hashMap.hasOwnProperty(hash)) {
         delete(runningProcs.hashMap[hash]);
     }
-
-    counter = runningProcs.size();
-    if (counter < 1) {
-        counter = "";
-    }
-
-    chrome.browserAction.setBadgeText({text: counter.toString()});
+    updateBrowserBadge();
 }
 
 /**
@@ -562,6 +583,7 @@ var removeRunningRuleById = function (id) {
         throw new Error("id param passed to removeRunningRuleById was not a string. :: " + (typeof id));
     }
 
+    d("removeRunningRuleById removing rule by id: " + id);
     for (p in runningProcs.hashMap) {
         if (runningProcs.hashMap.hasOwnProperty(p)) {
 
@@ -574,14 +596,10 @@ var removeRunningRuleById = function (id) {
 
     if (found) {
         delete(runningProcs.hashMap[found]);
+        d("removeRunningRuleById rule " + id + " found and removed from runningProcs");
     }
 
-    counter = runningProcs.size();
-    if (counter < 1) {
-        counter = "";
-    }
-
-    chrome.browserAction.setBadgeText({text: counter.toString()});
+    updateBrowserBadge();
 }
 
 
@@ -869,8 +887,8 @@ var initbgpage = function (reload) {
     };
 
     chrome.tabs.onActivated.addListener(function (o) {
-        chrome.browserAction.setTitle({title: BADGE_TITLE})
-        chrome.browserAction.setIcon({path: 'img/24/geek_zombie_24.png'});
+        //chrome.browserAction.setTitle({title: BADGE_TITLE})
+        //chrome.browserAction.setIcon({path: 'img/24/geek_zombie_24.png'});
     });
     if (reload) {
         chrome.webRequest.onHeadersReceived.removeListener(requestListener);
@@ -901,8 +919,8 @@ chrome.runtime.onInstalled.addListener(function (details) {
  */
 chrome.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
-        var oRule;
-        console.log("Received some message");
+        var oRule, fgId;
+        console.log("Received some message in background page");
         if (sender.tab) {
 
             if (request.getConfig && request.getConfig == "fgRule") {
@@ -912,27 +930,27 @@ chrome.runtime.onMessage.addListener(
                     sendResponse({fgRule: { reloadVal: oRule.fgTimeout, ruleId: oRule.id}});
                     updateForegroundRules(oRule, sender.tab.id);
                 }
+            } else if (request.reloading) {
+                console.log("BG received message about tab reloading for ruleID: " + request.reloading);
+                fgId = request.reloading;
+                if (foregroundRules.hasOwnProperty(fgId)) {
+                    oRule = foregroundRules[fgId];
+                    d("BG::Received message from content script about reload the page. Rule: " + oRule.rule.ruleName);
+                    oRule.update();
+                    oRule.setNextReloadTime();
+                    sendResponse({updated: true});
+                }
+            } else if (request.updateTime && request.ruleId) {
+                fgId = request.ruleId;
+                if (foregroundRules.hasOwnProperty(fgId)) {
+                    oRule = foregroundRules[fgId];
+                    d("BG::Received message from content script about updating reload time. Rule: " + oRule.rule.ruleName + " reloadTime: " + request.updateTime);
+                    oRule.setNextReloadTime(request.updateTime);
+                    sendResponse({updated: true});
+                }
             }
         }
     }
 );
-
-/**
- * Listener for clicks on pageAction icon
- * pageAction icon is set when tab has foreground rule
- * associated with its page (page scheduled to reload)
- * Clicking on pageAction icon should take
- * use to settings page for that rule
- * and set the settings tab active
- */
-/*chrome.pageAction.onClicked.addListener(function (oTab) {
-    var settingsUrl, oRule = getForegroundRuleByTabId(oTab.id);
-    console.log("Clicked on pageAction icon in tab " + oTab.id);
-    if(oRule){
-        settingsUrl = "settings.html?id=" + oRule.id ;
-        chrome.tabs.create({url: settingsUrl});
-    }
-
-})*/
 
 initbgpage();
