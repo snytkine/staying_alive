@@ -185,9 +185,11 @@ var cancelContentScript = function (tabId, ruleId) {
         throw new Error("cancelContentScript tabId param must be a number");
     }
 
-    if (typeof ruleId !== 'number') {
-        throw new Error("cancelContentScript ruleId param must be a number");
-    }
+    /*if (typeof ruleId !== 'number') {
+     throw new Error("cancelContentScript ruleId param must be a number");
+     }*/
+
+    console.log("cancelContentScript() for tabId " + tabId + " ruleId: " + ruleId);
 
     /**
      * Make sure tab with this tabId exists, otherwise
@@ -204,6 +206,23 @@ var cancelContentScript = function (tabId, ruleId) {
             }
         }
     );
+}
+
+/**
+ * Get number of rules in foregroundRules object
+ * This function is called from popup.js
+ *
+ * @returns int
+ */
+var getForegroundRulesCount = function () {
+    var i = 0;
+    for (var p in foregroundRules) {
+        if (foregroundRules.hasOwnProperty(p)) {
+            i += 1;
+        }
+    }
+
+    return i;
 }
 
 /**
@@ -254,15 +273,40 @@ var isValidResponse = function (oRule, details) {
  * (in most cases should be remove, but not always. For example
  * if user navigated to different url but it still matching the rule then don't remove)
  *
- * If Rule is removed then also hide pageAction icon and reset title, popup, etc.
+ * If Rule is removed then also update browserAction
  *
  * @param tabId
  * @param changeInfo
  * @param tab
  */
 var handleTabUpdate = function (tabId, changeInfo, tab) {
+    /**
+     * DomainRule object that is used for that tabId (if found)
+     */
+    var dr;
+
     d("handleTabUpdate::tabId " + tabId + " status: " + changeInfo.status + " url: " + changeInfo.url);
     d("handleTabUpdate Tab id: " + tab.id + " status: " + tab.status + " url: " + tab.url + " active: " + tab.active);
+
+    if (changeInfo.status === 'loading' && changeInfo.url) {
+        console.log("handleTabUpdate url in tab changed");
+        dr = getForegroundRuleByTabId(tabId)
+        /**
+         * If new uri does not match dr's foreground rule then
+         * remove foreground rule
+         * otherwise this means that user just navigates inside the matching site
+         *
+         * If rule did not match then content script was not initialized
+         * But what if the new uri in tab matched another foreground rule?
+         * Then it will be added to foregroundRules for the same tabId
+         * which is OK because the old rule with same tabId
+         * will already be removed by them
+         * since status 'loading' even is fired before the new content
+         * script is injected
+         */
+        if(!dr.)
+        removeForegroundRuleByTabId(tabId);
+    }
 }
 
 /**
@@ -332,7 +376,7 @@ var updateBrowserBadge = function () {
  * @param rule
  * @param tabId
  */
-var updateForegroundRules = function (rule, tabId) {
+var updateForegroundRules = function (rule, tabId, uri) {
     var id, fgRule;
     if (null === rule || (typeof rule !== 'object')) {
         throw Error("updateForegroundRules parameter must be instance of DomainRule");
@@ -342,28 +386,45 @@ var updateForegroundRules = function (rule, tabId) {
     if (foregroundRules.hasOwnProperty(id)) {
         fgRule = foregroundRules[id];
         d("updateForegroundRules. Rule is already running: " + rule.ruleName + " tabId: " + tabId);
-        //foregroundRules[id].update();
+        /**
+         * Update uri property as it may have changed in this request
+         * For example when user navigates on the same site
+         * the uri will be different but the rule still the same
+         * We will show the value of the uri in the popup window
+         * as the url of the next reload
+         *
+         */
+        fgRule.uri = uri;
     } else {
-        fgRule = new RunningForegroundRule(rule, tabId);
+        fgRule = new RunningForegroundRule(rule, tabId, uri);
         foregroundRules[id] = fgRule;
-        d("updateForegroundRules. Added foreground rule: " + rule.ruleName + " tabId: " + tabId);
+        d("updateForegroundRules. Added foreground rule: " + rule.ruleName + " tabId: " + tabId + " called uri: " + uri);
         updateBrowserBadge();
     }
-
 }
 
-
-var removeForegroundRule = function (rule) {
-    var tabId, id = rule.id;
+/**
+ * Given the id of foreground rule
+ * if it exists in foregroundRules object
+ * get the tabId for the rule
+ * delete object from foregroundRules,
+ * call
+ * then call updateBrowserBadge() because count has changed
+ *
+ * @param string id
+ */
+var removeForegroundRuleById = function (id) {
+    console.log("removeForegroundRuleById() id: " + id);
+    var tabId;
     if (foregroundRules.hasOwnProperty(id)) {
-        d("removeForegroundRule for rule: " + rule.ruleName);
+        d("removeForegroundRule for rule: " + foregroundRules[id]['rule']['ruleName']);
 
         tabId = foregroundRules[id]['tabId'];
         /**
          * hide browserAction icon for tab
          */
         delete(foregroundRules[id]);
-        updateBrowserBadge();
+        cancelContentScript(tabId, id);
     } else {
         d("removeForegroundRule Rule " + rule.ruleName + " is not in the foregroundRules");
     }
@@ -374,10 +435,20 @@ var removeForegroundRule = function (rule) {
  * in foregroundRules object and remove rule from foregroundRules
  * This function will be called when tab is closed
  *
+ * OR when tab is updated and the new url in tab
+ * no longer matches the rule assigned to that tab
+ * meaning user navigated away from the website that
+ * matched the rule
+ *
  * @param tabId
  */
 var removeForegroundRuleByTabId = function (tabId) {
     var foundId;
+
+    if (!tabId || (typeof tabId !== 'number')) {
+        throw new Error("removeForegroundRuleByTabId tabId param must be a number");
+    }
+
     for (var id in foregroundRules) {
         if (foregroundRules.hasOwnProperty(id)) {
             if (foregroundRules[id]['tabId'] === tabId) {
@@ -584,19 +655,29 @@ var removeRunningRuleById = function (id) {
     }
 
     d("removeRunningRuleById removing rule by id: " + id);
-    for (p in runningProcs.hashMap) {
-        if (runningProcs.hashMap.hasOwnProperty(p)) {
+    if ("fg_" === id.substring(0, 3)) {
+        /**
+         * This is foreground rule
+         * Find it in foregroundRules
+         * if found remove it
+         * and then post message to the rule's tab
+         */
+        removeForegroundRuleById(id.substring(3));
+    } else {
+        for (p in runningProcs.hashMap) {
+            if (runningProcs.hashMap.hasOwnProperty(p)) {
 
-            if (id === runningProcs.hashMap[p].rule.id) {
-                console.log("Found RunningRule with id: " + runningProcs.hashMap[p].rule.ruleName);
-                found = p;
+                if (id === runningProcs.hashMap[p].rule.id) {
+                    console.log("Found RunningRule with id: " + runningProcs.hashMap[p].rule.ruleName);
+                    found = p;
+                }
             }
         }
-    }
 
-    if (found) {
-        delete(runningProcs.hashMap[found]);
-        d("removeRunningRuleById rule " + id + " found and removed from runningProcs");
+        if (found) {
+            delete(runningProcs.hashMap[found]);
+            d("removeRunningRuleById rule " + id + " found and removed from runningProcs");
+        }
     }
 
     updateBrowserBadge();
@@ -928,7 +1009,7 @@ chrome.runtime.onMessage.addListener(
                 if (oRule) {
                     console.log("Foreground Rule for " + sender.tab.url + " found. " + oRule.ruleName);
                     sendResponse({fgRule: { reloadVal: oRule.fgTimeout, ruleId: oRule.id}});
-                    updateForegroundRules(oRule, sender.tab.id);
+                    updateForegroundRules(oRule, sender.tab.id, sender.tab.url);
                 }
             } else if (request.reloading) {
                 console.log("BG received message about tab reloading for ruleID: " + request.reloading);
@@ -937,7 +1018,12 @@ chrome.runtime.onMessage.addListener(
                     oRule = foregroundRules[fgId];
                     d("BG::Received message from content script about reload the page. Rule: " + oRule.rule.ruleName);
                     oRule.update();
-                    oRule.setNextReloadTime();
+                    /**
+                     * @todo this is a problem
+                     * because we are setting nextReloadTime now
+                     * but then it make take some time to reload the page
+                     */
+                        //oRule.setNextReloadTime();
                     sendResponse({updated: true});
                 }
             } else if (request.updateTime && request.ruleId) {

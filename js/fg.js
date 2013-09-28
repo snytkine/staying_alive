@@ -97,7 +97,7 @@
                  * but first notify background process
                  *
                  * @todo can examine resp object
-                 * and see if whould really reload
+                 * and see if would really reload
                  * of maybe it was already cancelled in background process somehow,
                  * in which case can set isCancelled and hide alert
                  */
@@ -201,7 +201,7 @@
                     if (request.stopRule && request.stopRule == ruleId) {
                         isCancelled = true;
                         alertDiv.style.display = "none";
-                        console.log("Ccancelled reload for this rule " + ruleId);
+                        console.log("Cancelled reload for this rule " + ruleId);
                     }
                 }
             }

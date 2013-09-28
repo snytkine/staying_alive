@@ -169,7 +169,7 @@ var showProcs = function renderTable(procs, foregroundRules) {
             rr = foregroundRules[f]
             dr = rr['rule'];
             show_running += '<tr id="fg_' + dr.id + '" class="fg_rule">';
-            show_running += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title=""><a href="settings.html?id=' + dr.id + '" target="_rule_settings">' + dr.ruleName + '</a></span></td>';
+            show_running += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + rr.uri + '"><a href="settings.html?id=' + dr.id + '" target="_rule_settings">' + dr.ruleName + '</a></span></td>';
             show_running += '<td class="rule_interval">' + formatInterval(dr.fgTimeout, "m") + '</td>';
             show_running += '<td class="next_run">' + formatInterval(rr.getNextRunTime()) + '</td>';
             show_running += '<td><span class="counter">' + rr.counter + '</span></td>';
@@ -253,7 +253,7 @@ var updateTable = function (procs, foregroundRules) {
                  */
                 tr = "";
                 tr += '<tr id="fg_' + dr.id + '" class="fg_rule">';
-                tr += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title=""><a href="settings.html?id=' + dr.id + '" target="_rule_settings">' + dr.ruleName + '</a></span></td>';
+                tr += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + rr.uri + '"><a href="settings.html?id=' + dr.id + '" target="_rule_settings">' + dr.ruleName + '</a></span></td>';
                 tr += '<td class="rule_interval">' + formatInterval(dr.fgTimeout, "m") + '</td>';
                 tr += '<td class="next_run">' + formatInterval(rr.getNextRunTime()) + '</td>';
                 tr += '<td><span class="counter">' + rr.counter + '</span></td>';
@@ -286,7 +286,7 @@ var updateTable = function (procs, foregroundRules) {
              * Check for id mthead!
              */
             if (trId !== 'mthead') {
-                if (!procs.getRuleById(trId) && !foregroundRules.hasOwnProperty(trId.substring(2))) {
+                if (!procs.getRuleById(trId) && !foregroundRules.hasOwnProperty(trId.substring(3))) {
                     d("Removing tr with id: " + trId);
                     e.remove();
                 } else {
@@ -318,8 +318,8 @@ var updatePopup = function update(oneTimeOnly) {
         return;
     }
 
-    if (procs.size() < 1) {
-        showAlert("There are no background requests running at this time. Click on Settings button above to view or add background rules");
+    if (procs.size() < 1 && bgpage.getForegroundRulesCount() === 0) {
+        showAlert("There are no background requests and no scheduled page reloads running at this time. Click on Settings button above to view or add background rules");
 
         return;
     }
