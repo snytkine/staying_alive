@@ -108,6 +108,10 @@ var setupRuleEditor = function (ruleId) {
         $("#loop_interval").val(rule.getInterval());
         $("#loop_exit_tab").prop('checked', !!rule.breakOnTabClose);
         $("#loop_exit_200").prop('checked', !!(rule.rule && rule.rule.ruleType && (rule.rule.ruleType == 'httpCodeIs') && rule.rule.ruleValue == '200'));
+        // Foreground uri and timeout
+        $("#fg_trigger_uri").val(rule.fgUri);
+        $("#fg_interval").val(rule.fgTimeout);
+
         if (rule.removeCookies && rule.removeCookies.length > 0) {
             cookies = rule.removeCookies.join("\n");
         }
@@ -127,8 +131,10 @@ var setupRuleEditor = function (ruleId) {
  */
 var SettingsForm = function () {
 
-    var myuri,
+    var myTriggerUri,
+        myuri,
         myloopuri,
+        fguri,
         temp,
         sCookies = $.trim($("#cookie_ignore").val()),
         aCookies = [],
@@ -144,17 +150,27 @@ var SettingsForm = function () {
      * throw Error.
      * @type {*}
      */
-    myuri = parseUri($("#trigger_uri").val());
-    myloopuri = parseUri($("#loop_uri").val());
+    myTriggerUri = $.trim($("#trigger_uri").val());
+    fguri = $.trim($("#fg_trigger_uri").val());
+    console.log("fguri: " + fguri);
 
-    d("uri in form: " + JSON.stringify(myuri));
-    d("loopUri in form: " + JSON.stringify(myloopuri));
+    if (myTriggerUri.length === 0 && fguri.length === 0) {
+        throw new Error('Please define at least one of these: <br><strong>Trigger Uri</strong><br>or <strong>Auto-Reload Url</strong> in the "Foreground Page Reload Rule" section');
+    }
 
-    if (myuri['protocol'] !== "http" && myuri['protocol'] !== "https") {
+    if (myTriggerUri.length > 0) {
+        myuri = parseUri(myTriggerUri);
+        myloopuri = parseUri($("#loop_uri").val());
+        d("uri in form: " + JSON.stringify(myuri));
+        d("loopUri in form: " + JSON.stringify(myloopuri));
+    }
+
+
+    if (myuri && myuri['protocol'] !== "http" && myuri['protocol'] !== "https") {
         throw new Error("Invalid Trigger Url.\nUrl Must start with http:// or https://");
     }
 
-    if (myloopuri['source'] !== "" && myloopuri['protocol'] !== "http" && myloopuri['protocol'] !== "https") {
+    if (myloopuri && myloopuri['source'] !== "" && myloopuri['protocol'] !== "http" && myloopuri['protocol'] !== "https") {
         throw new Error("Invalid Background Request Url.\nUrl Must start with http:// or https://");
     }
     // End Validation
@@ -168,6 +184,17 @@ var SettingsForm = function () {
     this.breakOnTabClose = $("#loop_exit_tab").is(':checked');
     this.removeCookies = null;
     this.extraHeader = null;
+
+
+    if (fguri.length > 0) {
+        this.fgUri = fguri;
+    }
+
+    this.fgTimeout = $("#fg_interval").val();
+    if (this.fgTimeout.length > 0) {
+        this.fgTimeout = parseInt(this.fgTimeout, 10);
+    }
+
 
     if ($("#loop_exit_200").is(':checked')) {
         this.rule = {
@@ -199,7 +226,7 @@ var SettingsForm = function () {
 /**
  * Adds css class 'active' to the list rule in the list of rules
  * so that it will have diffident color
- * All other rules that may have been previosly set as active
+ * All other rules that may have been previously set as active
  * are reset to not active
  *
  * @param ruleId
@@ -264,16 +291,6 @@ var saveFormValues = function () {
      */
     if (!oFormVals.ruleName || oFormVals.ruleName.length < 1) {
         showAlert("Rule Name is Required<br>Rule NOT Saved");
-        return;
-    }
-
-    if (!oFormVals.uri || oFormVals.uri.length < 10) {
-        showAlert("Trigger Url is Required<br>Rule NOT Saved");
-        return;
-    }
-
-    if (!oFormVals.uri || oFormVals.requestInterval.length < 1) {
-        showAlert("Request Interval is Required<br>Rule NOT Saved");
         return;
     }
 
@@ -430,4 +447,6 @@ $(function () {
         setupRuleEditor(oUri['queryKey']['id']);
     }
 })
+
+
 

@@ -34,6 +34,7 @@ var d = function (s) {
     console.log("[" + (new Date().toLocaleTimeString()) + "] " + s);
 }
 
+
 // parseUri 1.2.2
 // (c) Steven Levithan <stevenlevithan.com>
 // MIT License
@@ -148,6 +149,9 @@ var DomainRule = function (o) {
     this.removeCookies = o.removeCookies || null;
     this.breakOnTabClose = !!(o.breakOnTabClose || false);
     this.extraHeader = o.extraHeader || null;
+
+    this.fgUri = (o.fgUri) ? o.fgUri.toLocaleLowerCase() : null;
+    this.fgTimeout = o.fgTimeout || 1;
 }
 
 /**
@@ -168,10 +172,14 @@ DomainRule.prototype.update = function (o) {
     this.removeCookies = o.removeCookies || null;
     this.breakOnTabClose = !!(o.breakOnTabClose || false);
     this.extraHeader = o.extraHeader || null;
+
+    this.fgUri = (o.fgUri) ? o.fgUri.toLocaleLowerCase() : null;
+    this.fgTimeout = o.fgTimeout || 1;
 }
 
+
 /**
- * Check passed uri agains uri, uri/, loopUri, loopUri/
+ * Check passed uri against uri, uri/, loopUri, loopUri/
  *
  * @param uri string
  * @returns boolean
@@ -185,6 +193,37 @@ DomainRule.prototype.isUriMatch = function (uri) {
     ret = uri === this.uri || (uri === (this.uri + '/') ) || uri === this.loopUri || (uri === (this.loopUri + '/') );
 
     return !!ret;
+}
+
+
+/**
+ * Test if passed uri string matches a foreground rule
+ *
+ * @param string uri
+ * @returns {boolean} true if passed uri is a match for this
+ * rule's foreground rule
+ */
+DomainRule.prototype.isForegroundMatch = function (uri) {
+
+    if (!this.fgUri || !this.fgTimeout) {
+
+        return false;
+    }
+
+    /**
+     * The fgUri converted to lower case before it is stored
+     * so we need to also convert the argument uri
+     */
+    uri = uri.toLocaleLowerCase();
+
+    if (uri.length >= this.fgUri.length) {
+        if (uri.indexOf(this.fgUri) === 0) {
+
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -232,13 +271,13 @@ DomainRule.prototype.getInterval = function () {
 DomainRule.prototype.toString = function () {
     var ret = "";
 
-    ret = JSON.stringify(this, ["uri", "ruleName", "loopUri", "requestInterval"])
+    ret = JSON.stringify(this, ["uri", "ruleName", "loopUri", "requestInterval", "fgUri"])
 
     return ret;
 }
 
 DomainRule.prototype.hashCode = function () {
-    var ret = CryptoJS.SHA1(this.uri + this.loopUri);
+    var ret = CryptoJS.SHA1(this.uri + this.loopUri + this.fgUri);
 
     return ret.toString(CryptoJS.enc.Hex);
 }
@@ -316,7 +355,7 @@ RunningRule.prototype.incrementCounter = function () {
  * @returns {number}
  */
 RunningRule.prototype.getNextRunTime = function () {
-    var ret, ts = Date.now();
+    var ret, ts = (new Date()).getTime();
     var lastRun = (this.latestTime > 0) ? this.latestTime : this.initTime;
     ret = lastRun + (this.rule.getInterval() * 60 * 1000) - ts;
 
@@ -325,6 +364,64 @@ RunningRule.prototype.getNextRunTime = function () {
 
 // end RunningRule
 
+
+var RunningForegroundRule = function (rule, tabId, uri) {
+    this.rule = rule;
+    this.tabId = parseInt(tabId, 10);
+    this.uri = uri;
+    /**
+     * Number of times rule was executed
+     * @type {number}
+     */
+    this.counter = 0;
+
+    /**
+     * Time when this object was created
+     * @type number milliseconds
+     */
+    this.initTime = (new Date()).getTime();
+
+    this.nextReloadTime = this.initTime + (rule.fgTimeout * 60000);
+}
+
+
+RunningForegroundRule.prototype.update = function () {
+    var ts = (new Date()).getTime();
+    this.counter += 1;
+}
+
+/**
+ * Update value of nextReloadTime
+ * If argument is passed (will be number of seconds) then set the value by
+ * adding number of seconds (convert to milliseconds first ) to current timestamp
+ * if argument not passed
+ * then add number of minutes converted to milliseconds
+ *
+ * @param int t number of seconds (from now) till the next page reload
+ */
+RunningForegroundRule.prototype.setNextReloadTime = function (t) {
+
+    var ts = (new Date()).getTime();
+    if (t) {
+        if (typeof t !== 'number') {
+            throw new Error("RunningForegroundRule::setNextReloadTime param t must be a number");
+        }
+        this.nextReloadTime = ts + t * 1000;
+    } else {
+        this.nextReloadTime = ts + this.rule.fgTimeout * 60000;
+    }
+}
+
+/**
+ * Get number of milliseconds till next scheduled page reload
+ *
+ * @returns {number}
+ */
+RunningForegroundRule.prototype.getNextRunTime = function () {
+    var ts = (new Date()).getTime();
+
+    return this.nextReloadTime - ts;
+}
 
 /**
  * Storage object that holds

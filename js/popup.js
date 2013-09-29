@@ -120,7 +120,7 @@ var formatInterval = function (i, itype) {
  *
  * @param procs object RunningProcs
  */
-var showProcs = function renderTable(procs) {
+var showProcs = function renderTable(procs, foregroundRules) {
     console.log("WILL SHOW running procs");
     console.log("TOTAL RUNNING PROCS: " + procs.size());
 
@@ -146,16 +146,34 @@ var showProcs = function renderTable(procs) {
      */
     var dr;
 
+
     for (var p in procs.hashMap) {
         if (procs.hashMap.hasOwnProperty(p)) {
             rr = procs.hashMap[p]
             dr = rr['rule'];
             show_running += '<tr id="' + dr.id + '" start_time="' + rr.initTime + '">';
-            show_running += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + dr.getLoopUri() + '"><a href="settings.html?id='+dr.id+'" target="_settings">' + dr.ruleName + '</a></span></td>';
+            show_running += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + dr.getLoopUri() + '"><a href="settings.html?id=' + dr.id + '" target="_rule_settings">' + dr.ruleName + '</a></span></td>';
             show_running += '<td class="rule_interval">' + formatInterval(dr.getInterval(), "m") + '</td>';
             show_running += '<td class="next_run">' + formatInterval(rr.getNextRunTime()) + '</td>';
             show_running += '<td><span class="counter">' + rr.counter + '</span></td>';
             show_running += '<td><button type="button" rel="tooltip" data-toggle="tooltip" title="Cancel rule" class="cancel_rule" rule_id="' + dr.id + '" >';
+            show_running += '<span></span></button></td></tr>';
+        }
+    }
+
+    /**
+     * Now foreground rules
+     */
+    for (var f in foregroundRules) {
+        if (foregroundRules.hasOwnProperty(f)) {
+            rr = foregroundRules[f]
+            dr = rr['rule'];
+            show_running += '<tr id="fg_' + dr.id + '" class="fg_rule">';
+            show_running += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + rr.uri + '"><a href="settings.html?id=' + dr.id + '" target="_rule_settings">' + dr.ruleName + '</a></span></td>';
+            show_running += '<td class="rule_interval">' + formatInterval(dr.fgTimeout, "m") + '</td>';
+            show_running += '<td class="next_run">' + formatInterval(rr.getNextRunTime()) + '</td>';
+            show_running += '<td><span class="counter">' + rr.counter + '</span></td>';
+            show_running += '<td><button type="button" rel="tooltip" data-toggle="tooltip" title="Cancel rule" class="cancel_rule" rule_id="fg_' + dr.id + '" >';
             show_running += '<span></span></button></td></tr>';
         }
     }
@@ -169,8 +187,8 @@ var showProcs = function renderTable(procs) {
  *
  * @param procs
  */
-var updateTable = function (procs) {
-    var tr, i = 0;
+var updateTable = function (procs, foregroundRules) {
+    var tr, rr, dr, i = 0;
     for (var p in procs.hashMap) {
         if (procs.hashMap.hasOwnProperty(p)) {
             i += 1;
@@ -195,7 +213,7 @@ var updateTable = function (procs) {
                  */
                 tr = "";
                 tr += '<tr id="' + dr.id + '" start_time="' + rr.initTime + '">';
-                tr += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + dr.getLoopUri() + '"><a href="settings.html?id='+dr.id+'" target="_settings">' + dr.ruleName + '</a></span></td>';
+                tr += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + dr.getLoopUri() + '"><a href="settings.html?id=' + dr.id + '" target="_rule_settings">' + dr.ruleName + '</a></span></td>';
                 tr += '<td class="rule_interval">' + formatInterval(dr.getInterval(), "m") + '</td>';
                 tr += '<td class="next_run">' + formatInterval(rr.getNextRunTime()) + '</td>';
                 tr += '<td><span class="counter">' + rr.counter + '</span></td>';
@@ -210,6 +228,46 @@ var updateTable = function (procs) {
     }
 
     /**
+     * Now foreground rules
+     */
+    for (var f in foregroundRules) {
+        if (foregroundRules.hasOwnProperty(f)) {
+            i += 1;
+            rr = foregroundRules[f]
+            dr = rr['rule'];
+            tr = $("#fg_" + dr.id);
+
+            if (tr.length > 0) {
+                //tr.find("td.rule_name").attr(dr.getLoopUri());
+                tr.find("td.rule_interval").html(formatInterval(dr.fgTimeout, "m"));
+                tr.find("td.next_run").html(formatInterval(rr.getNextRunTime()));
+                tr.find("span.counter").html(rr.counter);
+            } else {
+                /**
+                 * If new RunningRule was added while the popup
+                 * window is open - this rule was not in the html table yet,
+                 * we need to append new row for it.
+                 * This is the case when while popup window is opened
+                 * the uri is entered in active tab and that uri matched
+                 * one of the rules, thus added to runningProcs object
+                 */
+                tr = "";
+                tr += '<tr id="fg_' + dr.id + '" class="fg_rule">';
+                tr += '<td><span class="rule_name" rel="tooltip" data-toggle="tooltip" title="' + rr.uri + '"><a href="settings.html?id=' + dr.id + '" target="_rule_settings">' + dr.ruleName + '</a></span></td>';
+                tr += '<td class="rule_interval">' + formatInterval(dr.fgTimeout, "m") + '</td>';
+                tr += '<td class="next_run">' + formatInterval(rr.getNextRunTime()) + '</td>';
+                tr += '<td><span class="counter">' + rr.counter + '</span></td>';
+                tr += '<td><button type="button" rel="tooltip" data-toggle="tooltip" title="Cancel rule" class="cancel_rule" rule_id="fg_' + dr.id + '" >';
+                tr += '<span></span></button></td>';
+                tr += '</tr>';
+
+                $("table.running_procs > tbody").append(tr);
+            }
+
+        }
+    }
+
+    /**
      * If RunningRule has been removed from runningProcs
      * but is still in the html table we must remove that tr element from table.
      * This would be the case if tab is closed or bad http response received
@@ -221,17 +279,18 @@ var updateTable = function (procs) {
     if ($('tr').length > (i + 1)) {
         d("Need to remove tr from table");
         $('tr').each(function () {
-            var e = $(this);
+            var trId, e = $(this);
+            trId = e.attr('id');
             /**
              * Do NOT remove header row!
              * Check for id mthead!
              */
-            if (e.attr('id') !== 'mthead') {
-                if (!procs.getRuleById(e.attr('id'))) {
-                    d("Removing tr with id: " + e.attr('id'));
+            if (trId !== 'mthead') {
+                if (!procs.getRuleById(trId) && !foregroundRules.hasOwnProperty(trId.substring(3))) {
+                    d("Removing tr with id: " + trId);
                     e.remove();
                 } else {
-                    d("tr with id " + e.attr('id') + " found in procs");
+                    d("tr with id " + trId + " found in procs");
                 }
             }
         })
@@ -250,24 +309,26 @@ var updateTable = function (procs) {
  */
 var updatePopup = function update(oneTimeOnly) {
 
-    var dr = bgpage.DOMAIN_RULES, procs = bgpage.runningProcs;
+    var dr = bgpage.DOMAIN_RULES, procs = bgpage.runningProcs, foregroundRules = bgpage.foregroundRules;
+
+    console.log("foregroundRules: " + JSON.stringify(foregroundRules));
 
     if (dr && dr.length < 1) {
         showAlert("You have not setup any rules for running background processes. Click on the Settings link above to add new rules");
         return;
     }
 
-    if (procs.size() < 1) {
-        showAlert("There are no background requests running at this time. Click on Settings button above to view or add background rules");
+    if (procs.size() < 1 && bgpage.getForegroundRulesCount() === 0) {
+        showAlert("There are no background requests and no scheduled page reloads running at this time. Click on Settings button above to view or add background rules");
 
         return;
     }
 
     if ($("table.running_procs").length > 0) {
-        updateTable(procs);
+        updateTable(procs, foregroundRules);
     } else {
         d("Will render new table");
-        showProcs(procs);
+        showProcs(procs, foregroundRules);
     }
 
     /**
