@@ -61,97 +61,81 @@
  {urls: ["<all_urls>"]},["responseHeaders","blocking"]);
  */
 
-/**
- * @todo add ability to add extra headers for background requests
- * By default remove X-Requested-With using some option in jQ (looks like it's not set anyway when using $.get() way...)
- */
-
-var runningProcs, iconImg, oData = {}, DOMAIN_RULES = [];
-
-iconImg = document.createElement('img');
-iconImg.src = 'img/24/geek_zombie_24.png';
-
 
 /**
- * Object that hold RunningRule objects
- * keeps track of background calls
- * schedule to be executed
+ * Foreground rules logic
  *
- * @type {RunningRules}
+ if url undefined then it is the same as before - do nothing
+ if changed - check if foregroundRule is running for this tab
+ if yes and it does not match the uri then remove it from runningForegroundRules
+ remove pageAction icon.
+
+ if match update count? No count is updated from inside content script via message.
+
+ RunningForegroundRules - can be just regular js object.
+ RunningForegroundRule (Rule, count, nextReloadTime, tabId)
+
+ RunningForegroundRule constructor
+ automatically sets this.nextReload based on Rule's timeout value
+ has counter, nextReloadTime, tabId
  */
-runningProcs = new RunningRules();
 
-var addHeader = function (url, allHeaders) {
-    var sent = 0, i, j, ret = [], aExtraHeaders, myIcon, hostname, aHosts, domain, mydomain = false;
+var DOMAIN_RULES = [], foregroundRules = {}, runningProcs = new RunningRules();
 
-    chrome.browserAction.setTitle({title: BADGE_TITLE});
+/**
+ * Send the message to content script that is running
+ * in the specified tab. Message will contain object
+ * {stopRule: ruleId}
+ *
+ * The listener in the content script will then
+ * hides reload countdown and will prevent
+ * any reloads that may already been scheduled;
+ *
+ * @param tabId
+ */
+var cancelContentScript = function (tabId, ruleId) {
+    if (typeof tabId !== 'number') {
+        throw new Error("cancelContentScript tabId param must be a number");
+    }
+
+    /*if (typeof ruleId !== 'number') {
+     throw new Error("cancelContentScript ruleId param must be a number");
+     }*/
+
+    console.log("cancelContentScript() for tabId " + tabId + " ruleId: " + ruleId);
 
     /**
-     * Get stored Data
-     * if not set or value is empty
-     * then nothing to do - just return back allHeaders
-     *
-     * Check url value for domain to match one of domain
-     * in setting. If no match then return back allHeaders
-     *
-     * if match then add our extra header name/value
-     * to allHeaders and return allHeaders
+     * Make sure tab with this tabId exists, otherwise
+     * we will get JavaScript error when trying to send message to
+     * non-existent tab
      */
-    aExtraHeaders = oData[HEADERS_KEY];
-    aHosts = oData[DOMAINS_KEY];
+    chrome.tabs.get(tabId, function (oTab) {
 
-    if (!aExtraHeaders || aExtraHeaders.length < 1) {
-        console.log('38 NO EXTRA HEADERS');
-        return allHeaders;
-    }
-
-    hostname = getHostname(url);
-    console.log('hostname: ' + hostname);
-    console.log('aHosts count: ' + aHosts.length);
-    console.log('extra headers count: ' + aExtraHeaders.length);
-
-
-    if (aHosts.length > 0) {
-        for (j = 0; j < aHosts.length; j += 1) {
-            domain = aHosts[j];
-            if (domain.startsWithDot()) {
-                if (hostname.endsWithDomain(domain) || domain.stripDot() === hostname) {
-                    mydomain = true;
-                    break;
-                }
+            if (oTab && oTab.id) {
+                d("cancelContentScript :: Sending stopRule message to tab " + tabId);
+                chrome.tabs.sendMessage(tabId, {stopRule: ruleId});
             } else {
-                if (hostname === domain) {
-                    mydomain = true;
-                    break;
-                }
+                colsole.log("cancelContentScript tab with id " + tabId + " does not exist");
             }
         }
-    }
+    );
+}
 
-    console.log('mydomain: ' + mydomain);
-    if (!mydomain) {
-
-        return allHeaders;
-    }
-
-    ret = allHeaders.slice();
-
-    for (i = 0; i < aExtraHeaders.length; i += 1) {
-        if (aExtraHeaders[i].value) {
-            ret.push({name: aExtraHeaders[i].hname, value: aExtraHeaders[i].value});
-            sent += 1;
+/**
+ * Get number of rules in foregroundRules object
+ * This function is called from popup.js
+ *
+ * @returns int
+ */
+var getForegroundRulesCount = function () {
+    var i = 0;
+    for (var p in foregroundRules) {
+        if (foregroundRules.hasOwnProperty(p)) {
+            i += 1;
         }
     }
 
-    if (sent > 0) {
-        d(sent + " Extra Header" + ((sent > 1) ? 's' : ''));
-        myIcon = IconCreator.paintIcon(iconImg, '#0000FF');
-        d('myIcon: ' + myIcon);
-        chrome.browserAction.setIcon({imageData: myIcon});
-        chrome.browserAction.setTitle({title: sent + " Extra Header" + ((sent > 1) ? 's' : '')});
-    }
-
-    return ret;
+    return i;
 }
 
 /**
@@ -169,7 +153,7 @@ var isValidResponse = function (oRule, details) {
     if (oRule.rule.ruleType === "httpCodeIs" && oRule.rule.ruleValue) {
         d("Looking for httpCodeIs " + oRule.rule.ruleValue);
         httpCode = details.statusLine.split(' ')[1];
-        d("http code: " + httpCode);
+        d("isValidResponse() http code in this response: " + httpCode);
 
         if (oRule.rule.ruleValue == httpCode) {
             ret = true;
@@ -180,6 +164,254 @@ var isValidResponse = function (oRule, details) {
 
     return ret;
 }
+
+
+/**
+ * Flow of calls:
+ *
+ * 1. onUpdated event fired with 'loading' status:
+ * handleTabUpdate::tabId 173 status: loading url: undefined <- url has not changed
+ * If url is changed then url will not be undefined.
+ * Also the url in tab object is always present.
+ *
+ * 2. content script is injected into page,
+ * message received from content script here
+ * Attempting to find foreground rule by uri
+ *
+ * 3. another onUpdatedEvent fired with 'complete' status
+ * handleTabUpdate::tabId 173 status: complete url: undefined
+ *
+ * If url changed - check if fg rule for that tabId exists
+ * and should be removed.
+ * (in most cases should be remove, but not always. For example
+ * if user navigated to different url but it still matching the rule then don't remove)
+ *
+ * If Rule is removed then also update browserAction
+ *
+ * @param tabId
+ * @param changeInfo
+ * @param tab
+ */
+var handleTabUpdate = function (tabId, changeInfo, tab) {
+    /**
+     * DomainRule object that is used for that tabId (if found)
+     */
+    var dr;
+
+    d("handleTabUpdate::tabId " + tabId + " status: " + changeInfo.status + " url: " + changeInfo.url);
+    d("handleTabUpdate::tabId: " + tab.id + " status: " + tab.status + " url: " + tab.url + " active: " + tab.active);
+
+    if (changeInfo.status === 'loading' && changeInfo.url) {
+        console.log("handleTabUpdate url in tab changed");
+        dr = getForegroundRuleByTabId(tabId);
+        /**
+         * If new uri does not match dr's foreground rule then
+         * remove foreground rule
+         * otherwise this means that user just navigates inside the matching site
+         *
+         * If rule did not match then content script was not initialized
+         * But what if the new uri in tab matched another foreground rule?
+         * Then it will be added to foregroundRules for the same tabId
+         * which is OK because the old rule with same tabId
+         * will already be removed by them
+         * since status 'loading' even is fired before the new content
+         * script is injected
+         */
+        if (dr && !dr.isForegroundMatch(changeInfo.url)) {
+            console.log("handleTabUpdate() new uri in tab does not match same rule anymore");
+            removeForegroundRuleByTabId(tabId);
+        }
+    }
+}
+
+/**
+ * Loop over all DOMAIN_RULES
+ * and return first rule that has matching
+ * foreground uri
+ *
+ * @param string uri
+ * @returns mixed null|DomainRule object
+ */
+var getForegroundRuleForUrl = function (uri) {
+    var i = 0, dr;
+
+    if (!uri || uri.length === 0) {
+        console.log("Empty string passed to getForegroundRuleForUrl");
+        return false;
+    }
+
+    d("Looking for foreground rule for url " + uri);
+
+    uri = uri.toLocaleLowerCase();
+
+    for (i = 0; i < DOMAIN_RULES.length; i += 1) {
+        dr = DOMAIN_RULES[i];
+
+        if (dr.isForegroundMatch(uri)) {
+            return dr;
+        }
+    }
+
+    d("No foregroudn rules matched for " + uri);
+
+    return null;
+}
+
+/**
+ * Update the value of counter on browser badge
+ */
+var updateBrowserBadge = function () {
+    var e, counter = 0;
+    counter = runningProcs.size();
+    for (e in foregroundRules) {
+        if (foregroundRules.hasOwnProperty(e)) {
+            counter += 1;
+        }
+    }
+
+    if (counter < 1) {
+        counter = "";
+    } else {
+        counter = counter.toString();
+    }
+
+    d("Counter of running rules: " + counter);
+
+    chrome.browserAction.setBadgeText({text: counter});
+}
+
+
+/**
+ * Updated foregroundRules object for a specific rule
+ * if rule already in foregroundRules
+ * or add new rule to foregroundRules
+ * This function is called after the content script
+ * sends a message asking to match the url against
+ * foreground rule and only if we got a match
+ *
+ * @param rule
+ * @param tabId
+ */
+var updateForegroundRules = function (rule, tabId, uri) {
+    var id, fgRule;
+    if (null === rule || (typeof rule !== 'object')) {
+        throw Error("updateForegroundRules parameter must be instance of DomainRule");
+    }
+
+    id = rule.id;
+    if (foregroundRules.hasOwnProperty(id)) {
+        fgRule = foregroundRules[id];
+        d("updateForegroundRules(). Rule is already running: " + rule.ruleName + " tabId: " + tabId);
+        /**
+         * Update uri property as it may have changed in this request
+         * For example when user navigates on the same site
+         * the uri will be different but the rule still the same
+         * We will show the value of the uri in the popup window
+         * as the url of the next reload
+         *
+         */
+        fgRule.uri = uri;
+        fgRule.setNextReloadTime();
+    } else {
+        fgRule = new RunningForegroundRule(rule, tabId, uri);
+        foregroundRules[id] = fgRule;
+        d("updateForegroundRules(). Added foreground rule: " + rule.ruleName + " tabId: " + tabId + " called uri: " + uri);
+        updateBrowserBadge();
+    }
+}
+
+/**
+ * Given the id of foreground rule
+ * if it exists in foregroundRules object
+ * get the tabId for the rule
+ * delete object from foregroundRules,
+ * call
+ * then call updateBrowserBadge() because count has changed
+ *
+ * @param string id
+ */
+var removeForegroundRuleById = function (id) {
+    console.log("removeForegroundRuleById() id: " + id);
+    var tabId;
+    if (foregroundRules.hasOwnProperty(id)) {
+        d("removeForegroundRule for rule: " + foregroundRules[id]['rule']['ruleName']);
+
+        tabId = foregroundRules[id]['tabId'];
+        /**
+         * hide browserAction icon for tab
+         */
+        delete(foregroundRules[id]);
+        cancelContentScript(tabId, id);
+    } else {
+        d("removeForegroundRule Rule " + rule.ruleName + " is not in the foregroundRules");
+    }
+}
+
+/**
+ * Given a value of tabId find RunningForegroundRule
+ * in foregroundRules object and remove rule from foregroundRules
+ * This function will be called when tab is closed
+ *
+ * OR when tab is updated and the new url in tab
+ * no longer matches the rule assigned to that tab
+ * meaning user navigated away from the website that
+ * matched the rule
+ *
+ * @param tabId
+ */
+var removeForegroundRuleByTabId = function (tabId) {
+    var foundId;
+
+    if (!tabId || (typeof tabId !== 'number')) {
+        throw new Error("removeForegroundRuleByTabId tabId param must be a number");
+    }
+
+    for (var id in foregroundRules) {
+        if (foregroundRules.hasOwnProperty(id)) {
+            if (foregroundRules[id]['tabId'] === tabId) {
+                foundId = id;
+                d("Found Running Foreground rule by tabId: " + tabId + " rule: " + foregroundRules[foundId]['rule']['ruleName']);
+                break;
+            }
+        }
+    }
+
+    if (foundId) {
+        delete(foregroundRules[foundId]);
+        updateBrowserBadge();
+    }
+}
+
+/**
+ * Find DomainRule is foregroundRules object by given tabId
+ * This function is called when url in tab is changed
+ * Then we need to find - do we have running foreground rule for this tab?
+ * if yes then we will try to match the new url agains this rule
+ * to see if it still matches.
+ * if not then we will remove the rule from foregroundRules and remove
+ * pageAction icon from tab.
+ *
+ * @param tabId
+ * @returns mixed DomainRule | null
+ */
+var getForegroundRuleByTabId = function (tabId) {
+
+    d("Looking for foregroundRule for tab: " + tabId);
+    for (var id in foregroundRules) {
+        if (foregroundRules.hasOwnProperty(id)) {
+            if (foregroundRules[id]['tabId'] === tabId) {
+                d("foreground rule found for tabId " + tabId + " rule: " + foregroundRules[id]['rule']['ruleName']);
+
+                return foregroundRules[id]['rule'];
+            }
+        }
+    }
+
+    d("foreground rule not found for tabId " + tabId);
+
+    return null;
+}
+
 
 /**
  * Format all request headers
@@ -213,7 +445,13 @@ var removeCookie = function (details, name) {
     name += "=";
     d("Trying to remove cookie: " + name);
     details.responseHeaders.forEach(function (v, i, a) {
-        if (v.name == "Set-Cookie" && v.value.indexOf(name) !== -1) {
+
+        /**
+         * Normalize header name to lower case
+         * to account for possible different variations
+         */
+        var hName = v.name.toLowerCase();
+        if (hName == "set-cookie" && v.value.indexOf(name) !== -1) {
             d("removing " + name + " cookie: " + v.value);
             details.responseHeaders.splice(i, 1);
             removed = true;
@@ -285,11 +523,7 @@ var addToCallsInProgress = function (oRule, fromTabId) {
 
     if (runningProcs.addRule(new RunningRule(oRule, fromTabId))) {
         scheduleRule(oRule);
-        counter = (counter + 1).toString();
-        d("Counter of running rules: " + (counter));
-
-        chrome.browserAction.setBadgeText({text: counter})
-        chrome.browserAction.setTitle({title: oRule.ruleName + " tab: " + fromTabId});
+        updateBrowserBadge();
     } else {
         d("Rule not added. Possible because same rule already exists in runningProcs");
     }
@@ -312,30 +546,7 @@ var removeRunningRule = function (oRule) {
     }
 
     removeRunningRuleById(oRule.id);
-
-    counter = runningProcs.size();
-    if (counter < 1) {
-        counter = "";
-    }
-
-    chrome.browserAction.setBadgeText({text: counter.toString()});
-}
-
-var removeRunningRuleByHash = function (hash) {
-    if (null === hash || (typeof hash !== 'string')) {
-        throw new Error("hash param passed to removeRunningRuleByHash was not a string. :: " + (typeof hash));
-    }
-
-    if (runningProcs.hashMap.hasOwnProperty(hash)) {
-        delete(runningProcs.hashMap[hash]);
-    }
-
-    counter = runningProcs.size();
-    if (counter < 1) {
-        counter = "";
-    }
-
-    chrome.browserAction.setBadgeText({text: counter.toString()});
+    updateBrowserBadge();
 }
 
 /**
@@ -349,26 +560,33 @@ var removeRunningRuleById = function (id) {
         throw new Error("id param passed to removeRunningRuleById was not a string. :: " + (typeof id));
     }
 
-    for (p in runningProcs.hashMap) {
-        if (runningProcs.hashMap.hasOwnProperty(p)) {
+    d("removeRunningRuleById removing rule by id: " + id);
+    if ("fg_" === id.substring(0, 3)) {
+        /**
+         * This is foreground rule
+         * Find it in foregroundRules
+         * if found remove it
+         * and then post message to the rule's tab
+         */
+        removeForegroundRuleById(id.substring(3));
+    } else {
+        for (p in runningProcs.hashMap) {
+            if (runningProcs.hashMap.hasOwnProperty(p)) {
 
-            if (id === runningProcs.hashMap[p].rule.id) {
-                console.log("Found RunningRule with id: " + runningProcs.hashMap[p].rule.ruleName);
-                found = p;
+                if (id === runningProcs.hashMap[p].rule.id) {
+                    console.log("Found RunningRule with id: " + runningProcs.hashMap[p].rule.ruleName);
+                    found = p;
+                }
             }
+        }
+
+        if (found) {
+            delete(runningProcs.hashMap[found]);
+            d("removeRunningRuleById rule " + id + " found and removed from runningProcs");
         }
     }
 
-    if (found) {
-        delete(runningProcs.hashMap[found]);
-    }
-
-    counter = runningProcs.size();
-    if (counter < 1) {
-        counter = "";
-    }
-
-    chrome.browserAction.setBadgeText({text: counter.toString()});
+    updateBrowserBadge();
 }
 
 
@@ -495,16 +713,22 @@ var getDomainRuleForUri = function (url) {
  */
 var handleTabClose = function (tabId) {
     var rule = runningProcs.getDomainRuleByTabId(tabId);
-    d("handling tabClose for tabId " + tabId);
+    d("handleTabClose() handling tabClose for tabId " + tabId);
     if (rule) {
-        d("Got running rule for tab " + tabId);
+        d("handleTabClose() Got background running rule for tab " + tabId);
         if (rule.breakOnTabClose) {
             d("Rule has breakOnTabClose option. Will remove this rule");
             removeRunningRule(rule);
         }
     } else {
-        d("No rule for tabId " + tabId);
+        d("handleTabClose() No rule for tabId " + tabId);
     }
+
+    /**
+     * Find ForegroundRule by tabId
+     * and remove it
+     */
+    removeForegroundRuleByTabId(tabId);
 }
 
 /**
@@ -545,6 +769,7 @@ var getPopupView = function () {
  */
 var initbgpage = function (reload) {
 
+
     var j, stored = getStoredItem();
 
     if (stored && (typeof stored === 'object') && stored.length > 0) {
@@ -556,22 +781,151 @@ var initbgpage = function (reload) {
         d("NO DOMAIN RULES in storage");
     }
 
+    /**
+     * @todo
+     * Later is the global "Keep System Awake" setting is ON then call one of these:
+     * It will prevent system from going to sleep
+     *
+     * chrome.power.requestKeepAwake('system'); // display may be dimmed or off but system will be running
+     * OR
+     * chrome.power.requestKeepAwake('display'); // display is highest level - will keep display ON
+     *
+     */
     runningProcs = new RunningRules();
+    foregroundRules = {};
 
+    /**
+     * This function is for injecting extra header/value into request headers
+     * only for the foreground rule (page reload)
+     * For background rules headers are injected using ajax library of jQuery
+     *
+     * This function is run onBeforeSendHeaders
+     * so it will run after the requestListener already ran, which is good
+     * because requestListener can remove foreground rule if tab no longer
+     * has url if valid foreground rule.
+     *
+     * @param details
+     * @returns {{requestHeaders: *}}
+     */
+    var headerInjector = function (details) {
+        var fgRule, aHeaders = [], ret = {requestHeaders: details.requestHeaders};
+        if (details.tabId >= 0) {
+            /**
+             * Find background rule by tabId
+             * see if the details.url still match that rule
+             * if yes then add header from the rule
+             */
+                //return{requestHeaders: addHeader(details.url, details.requestHeaders)}
+            fgRule = getForegroundRuleByTabId(details.tabId);
+            if (fgRule) {
+                if (fgRule.isForegroundMatch(details.url)) {
+                    if (fgRule.extraHeader && fgRule.extraHeader.name && fgRule.extraHeader.val) {
+                        /**
+                         * Add extra headers to array of all headers
+                         * First copy all headers to a new array using splice() with no params
+                         */
+                        aHeaders = details.requestHeaders.slice();
+                        aHeaders.push({name: fgRule.extraHeader.name, value: fgRule.extraHeader.val});
+                        console.log("BGP::headerInjector added extra header to response. Response headers now: " + JSON.stringify(aHeaders));
+
+                        ret = {requestHeaders: aHeaders};
+                    }
+                }
+            } else {
+                console.log("No foreground rule for tab id " + details.tabId + " No extra headers to inject");
+            }
+
+        }
+
+        return ret;
+    }
+
+    /**
+     *
+     * @param details
+     * @returns {{responseHeaders: *}}
+     */
     var requestListener = function (details) {
 
-        var myHref, oUri, views, view, oRule, url = details.url;
+        var myHref, oUri, views, view, fgRule, oRule, url = details.url;
+
+        /**
+         * Experimental injection of css and js
+         */
+        if (details.type == "main_frame" && details.tabId >= 0) {
+            d("Request is from main_frame for url: " + url + " tabId: " + details.tabId);
+
+            /**
+             * Check if already have foreground rule in this tabId
+             * and if rule suppose to exit on non-200 http response
+             * and if http code is NOT 200 then remove the background rule
+             * and DO NOT INJECT CSS/JS
+             * This means that if original response is NOT 200 the foreground
+             * rule will still be added but will at most me reloaded only once
+             * use isValidResponse(rule, details) to check for http code match
+             */
+            fgRule = getForegroundRuleByTabId(details.tabId);
+            if (fgRule) {
+                /**
+                 * For foreground requests removing cookies
+                 * is a bad idea.
+                 * If page is reloaded the user may still want to
+                 * use the actual page - even after many reloads.
+                 * If important cookies are removed it may prevent user from posting
+                 * to the form on the page.
+                 */
+                console.log('statusLine : ' + details.statusLine);
+                if (isValidResponse(fgRule, details)) {
+                    /**
+                     * Check if tabId exists in tabs, otherwise will get js error
+                     * if trying to inject into tab that does not exist
+                     */
+                    chrome.tabs.get(details.tabId, function (oTab) {
+                        if (oTab && oTab.id) {
+                            chrome.tabs.insertCSS(details.tabId, {file: "css/fg.css"});
+                            chrome.tabs.executeScript(details.tabId, {file: "js/fg.js", runAt: "document_idle"});
+                        }
+                    })
+                } else {
+                    console.log("Response is not valid response for the foreground rule " + fgRule.ruleName);
+                    removeForegroundRuleByTabId(details.tabId);
+                }
+            } else {
+                /**
+                 * Foreground rule not found for tab
+                 * Must inject the content script - this is just any regular url,
+                 * it may match some foreground rule we may have.
+                 * We inject content scripts into every page with the only
+                 * exception above - if this is a reload of page for existing rule but
+                 * response code did not match defined rule (usually not 200)
+                 */
+                chrome.tabs.get(details.tabId, function (oTab) {
+                    if (oTab && oTab.id) {
+                        chrome.tabs.insertCSS(details.tabId, {file: "css/fg.css"});
+                        chrome.tabs.executeScript(details.tabId, {file: "js/fg.js", runAt: "document_idle"});
+                    }
+                })
+            }
+        }
 
         /**
          * Remove ccn cookie if request is mylog
          * this is to prevent overriding the CodeIgniter security csfr cookie by simply
-         * looking at the logs
+         * looking at the logs.
+         *
+         * This is something that only makes sense to me. It's not necessary for general logic
+         * of this extension, but I want to make it part of the extension so that it
+         * always removes 'ccn' cookies for specific requests.
+         * I need it so that this extension plays nice with our other project
          */
         if (details.method === "GET" && details.type === "main_frame" && url.indexOf("public/mylog") !== -1) {
             d("request is mylog")
             removeCookie(details, "ccn");
         } else {
 
+            /**
+             * This logic block in for background rule only
+             */
             oRule = getDomainRuleForUri(url);
 
             if (oRule) {
@@ -598,12 +952,12 @@ var initbgpage = function (reload) {
 
                 d('responseHeaders: ' + printHeaders(details.responseHeaders));
                 removeCacheHeaders(details);
-                // new
+
                 /**
                  * If call NOT from tab (from background script)
                  */
                 if (details.tabId < 0) {
-                    d("Result is from background process");
+                    d("BGP::Result is from background process");
                     if (oRule.removeCookies && oRule.removeCookies.length > 0) {
                         oRule.removeCookies.forEach(function (o) {
                             removeCookie(details, o);
@@ -614,7 +968,7 @@ var initbgpage = function (reload) {
                         d("Result is not valid. Will remove from scheduled calls");
                         removeRunningRule(oRule);
                     } else {
-                        d("Result of background call for " + url + " was good. " + details.statusLine + " Will schedule it to run again")
+                        d("BGP::Result of background call for " + url + " was good. " + details.statusLine + " Will schedule it to run again")
                         /**
                          * Result of background call was valid.
                          * Update calls in progress with latest details
@@ -630,17 +984,8 @@ var initbgpage = function (reload) {
                      * that triggered the loop
                      * schedule it to run in background
                      */
-                    d("Rule matches for url: " + url + ". requestInterval: " + oRule.requestInterval);
-                    /**
-                     * @todo in future release may inject reloader into html page
-                     * Inject script into html
-                     */
-                        //chrome.tabs.executeScript(details.tabId, {
-                        //    code: 'setTimeout(function () { console.log("reloading... " + window.location.href); /* location.reload(); */}, 10 * 1000)',
-                        //    runAt: 'document_start'
-                        //}, function(){
-                        //    d("Injected script to page");
-                        //});
+                    d("BGP::Rule matches for url: " + url + ". requestInterval: " + oRule.requestInterval);
+
                     addToCallsInProgress(oRule, details.tabId);
                 }
 
@@ -652,26 +997,107 @@ var initbgpage = function (reload) {
         return {responseHeaders: details.responseHeaders};
     };
 
-    chrome.tabs.onActivated.addListener(function (o) {
-        chrome.browserAction.setTitle({title: BADGE_TITLE})
-        chrome.browserAction.setIcon({path: 'img/24/geek_zombie_24.png'});
-    });
     if (reload) {
         chrome.webRequest.onHeadersReceived.removeListener(requestListener);
+        chrome.webRequest.onBeforeSendHeaders.removeListener(headerInjector);
+        chrome.tabs.onRemoved.removeListener(handleTabClose);
+        chrome.tabs.onUpdated.removeListener(handleTabUpdate);
     }
+
     chrome.webRequest.onHeadersReceived.addListener(requestListener, {urls: ["<all_urls>"], types: ["main_frame", "xmlhttprequest"]}, ["responseHeaders", "blocking"]);
+    chrome.webRequest.onBeforeSendHeaders.addListener(headerInjector, {urls: ["<all_urls>"], types: ["main_frame"]}, ["requestHeaders", "blocking"]);
+    //chrome.webRequest.onBeforeSendHeaders.addListener(requestListener, {urls:["<all_urls>"], types:oData[REQUEST_TYPES_KEY]}, ["requestHeaders", "blocking"]);
     chrome.tabs.onRemoved.addListener(handleTabClose);
+    chrome.tabs.onUpdated.addListener(handleTabUpdate);
 }
 
+/**
+ * When the extension is installed
+ * open new tab with settings
+ */
 chrome.runtime.onInstalled.addListener(function (details) {
     var thisVersion;
     if (details.reason == "install") {
         console.log("This is a first install!");
+
     } else if (details.reason == "update") {
         thisVersion = chrome.runtime.getManifest().version;
         console.log("Updated from " + details.previousVersion + " to " + thisVersion + " !");
     }
     chrome.tabs.create({url: "settings.html"});
 });
+
+/**
+ * The content script will query this page
+ * looking for object fgRule with ruleId and reloadVal values
+ */
+chrome.runtime.onMessage.addListener(
+    function (request, sender, sendResponse) {
+        var oRule, fgId;
+        console.log("Received some message in background page");
+        if (sender.tab) {
+
+            if (request.getConfig && request.getConfig == "fgRule") {
+                oRule = getForegroundRuleForUrl(sender.tab.url);
+                if (oRule) {
+                    console.log("Foreground Rule for " + sender.tab.url + " found. " + oRule.ruleName);
+                    sendResponse({fgRule: { reloadVal: oRule.fgTimeout, ruleId: oRule.id}});
+                    updateForegroundRules(oRule, sender.tab.id, sender.tab.url);
+                }
+            } else if (request.reloading) {
+                console.log("BG received message about tab reloading for ruleID: " + request.reloading);
+                fgId = request.reloading;
+                if (foregroundRules.hasOwnProperty(fgId)) {
+                    oRule = foregroundRules[fgId];
+                    d("BG::Received message from content script about reload the page. Rule: " + oRule.rule.ruleName);
+                    oRule.update();
+                    /**
+                     * @todo this is a problem
+                     * because we are setting nextReloadTime now
+                     * but then it make take some tme to reload the page
+                     */
+                        //oRule.setNextReloadTime();
+                    sendResponse({updated: true});
+                }
+            } else if (request.updateTime && request.ruleId) {
+                fgId = request.ruleId;
+                if (foregroundRules.hasOwnProperty(fgId)) {
+                    oRule = foregroundRules[fgId];
+                    d("BG::Received message from content script about updating reload time. Rule: " + oRule.rule.ruleName + " reloadTime: " + request.updateTime);
+                    oRule.setNextReloadTime(request.updateTime);
+                    sendResponse({updated: true});
+                }
+            }
+        }
+    }
+);
+
+chrome.runtime.onSuspend.addListener(function () {
+    console.log("Chrome shutting down.");
+    /**
+     * Remove all background rules
+     * Remove all foreground rules
+     * The quickest way to do this is to just reset
+     * the foregroundRules to empty object
+     * and runningProcs to new RunningRules object
+     *
+     * @todo
+     * in the future save the foreground and background rules
+     * to storage so that they can be restored
+     * on next startup
+     */
+        //runningProcs = new RunningRules();
+        //foregroundRules = {};
+        //updateBrowserBadge();
+        //chrome.tabs.onRemoved.removeListener(handleTabClose);
+        //chrome.tabs.onUpdated.removeListener(handleTabUpdate);
+    console.log("Done onSuspend cleanup");
+
+})
+
+chrome.runtime.onSuspendCanceled.addListener(function () {
+    console.log("onSuspedCancelled() re-initializing...");
+    //initbgpage(true);
+})
 
 initbgpage();
