@@ -7,7 +7,7 @@
         "default_popup": "popup.html"
     },
     "options_page": "settings.html",
-    "description": "Sends Requests in Background to keep session active",
+    "description": "Never get logged our of any website due to idling!",
     "icons": {
         "16": "img/16/icon_timed_reload_16.png",
         "48": "img/48/icon_timed_reload_48.png",
