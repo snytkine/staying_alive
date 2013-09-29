@@ -51,7 +51,7 @@
      * Start counting down number of seconds
      * in which to show alert with alert's own countdown timer
      *
-     * @param int t number of minutes till alert
+     * @param int t number of seconds till alert
      */
     startCountdownToAlert = function (t) {
         if (!t) {
@@ -62,6 +62,11 @@
             throw new Error("Muminum value of timeout is 30 seconds. Passed: " + t);
         }
 
+        /**
+         * Send message to background script to update nextReloadTime of rule
+         * by t + 30 seconds!
+         */
+        chrome.runtime.sendMessage({ruleId: ruleId, updateTime: (t + 30)});
         setTimeout(showCountdownAlert, t * 1000);
     }
 
@@ -111,17 +116,20 @@
     }
 
     showCountdownAlert = function () {
-        var a, counter = document.getElementById("session_live_reloader_countdown");
-        document.getElementById("session_live_reloader_countdown").innerText = "30";
-        a = document.getElementById("ext_session_alive_reload_rule_id");
-        if (counter) {
-            counter.style.backgroundColor = "#999999";
+        var a, counter;
+        if (!isCancelled) {
+            counter = document.getElementById("session_live_reloader_countdown");
+            document.getElementById("session_live_reloader_countdown").innerText = "30";
+            a = document.getElementById("ext_session_alive_reload_rule_id");
+            if (counter) {
+                counter.style.backgroundColor = "#999999";
+            }
+            if (a) {
+                a.href = chrome.extension.getURL("settings.html") + "?id=" + ruleId + "#fg_rule";
+            }
+            alertDiv.style.display = "block";
+            startCountdownAlert();
         }
-        if (a) {
-            a.href = chrome.extension.getURL("settings.html") + "?id=" + ruleId + "#fg_rule";
-        }
-        alertDiv.style.display = "block";
-        startCountdownAlert();
     }
 
     /**
@@ -138,7 +146,7 @@
              * Re-schedule alert to reappear in 1 minute
              * Notify the backbround process about this extra minute added
              */
-            chrome.runtime.sendMessage({ruleId: ruleId, updateTime: 90});
+                //chrome.runtime.sendMessage({ruleId: ruleId, updateTime: 90});
 
             startCountdownToAlert(60);
         }
