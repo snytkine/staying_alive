@@ -210,6 +210,12 @@ DomainRule.prototype.isForegroundMatch = function (uri) {
         return false;
     }
 
+    /**
+     * The fgUri converted to lower case before it is stored
+     * so we need to also convert the argument uri
+     */
+    uri = uri.toLocaleLowerCase();
+
     if (uri.length >= this.fgUri.length) {
         if (uri.indexOf(this.fgUri) === 0) {
 
