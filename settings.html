@@ -6,184 +6,243 @@
     <script src="js/crypto_sha1.js"></script>
     <script src="js/lib.js"></script>
     <script src="js/settings.js"></script>
+    <script src="https://platform.twitter.com/widgets.js"></script>
 
-    <title></title>
+
+    <title>Staying Alive Settings</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="twitter:widgets:csp" content="on">
     <!-- Bootstrap -->
     <link href="css/bootstrap.css" rel="stylesheet" media="screen">
     <link href="css/settings.css" rel="stylesheet" media="screen">
 </head>
 <body>
 
-<div class="container">
-    <h1 class="settings">Staying Alive Settings</h1>
+<div class="mycontainer">
+<h1 class="settings">Staying Alive Settings</h1>
 
-    <div class="row">
-        <div class="col-md-4">
+<div class="row">
 
-            <div class="panel panel-default">
-                <div class="panel-heading">Rules</div>
-                <div class="panel-body">
-                    <div class="list-group" id="rules_list">
+<div class="col-md-3">
 
-                    </div>
-                    <button type="button" id="create_rule">
-                        <span class="glyphicon glyphicon-plus"></span> Create New Rule
-                    </button>
-                </div>
-            </div>
-
-
-        </div>
-        <div class="col-md-8">
-            <div class="well" id="no_rule">
-                Select a Rule to edit or<br>
-                Click <strong>"Create New Rule"</strong> button to add new rule
-            </div>
-            <div id="rule_form" class="rule_form hidden">
-                <div class="panel panel-default">
-
-                    <div class="panel-heading">Rule Setup</div>
-                    <div class="panel-body">
-                        <input type="hidden" id="rule_id" value="h23434">
-
-                        <div class="form-group">
-                            <label for="rule_name">Rule Name</label>
-                            <input type="text" class="form-control" id="rule_name"
-                                   placeholder="Assign a short name for this rule">
-
-                            <p class="text-muted">Rule will be identified by this name.</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="trigger_uri">Trigger Url</label>
-                            <input type="text" class="form-control" id="trigger_uri"
-                                   placeholder="Requesting this url from browser will trigger background request loop">
-
-                            <p class="text-muted">Requesting this url from browser will start the background request
-                                loop.</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="loop_uri">Background Request Url</label>
-                            <input type="text" class="form-control" id="loop_uri"
-                                   placeholder="This url will be requested in background">
-
-                            <p class="text-muted">Optional. If not specified will use Trigger Url</p>
-                        </div>
-
-                        <div class="request_interval">
-                            <label for="loop_interval">Request Interval (in minutes)</label>
-                            <input type="text" id="loop_interval" size="3" maxlength="3">
-
-                            <p class="text-muted">Minimum 1 minute. Only whole numbers are allowed.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel panel-default">
-                    <div class="panel-heading">Background Loop Exit Options</div>
-                    <div class="panel-body">
-                        <div class="checkbox">
-                            <label>
-                                <input type="checkbox" id="loop_exit_tab"> End Loop when browser tab is closed
-                            </label>
-                        </div>
-
-                        <div class="checkbox">
-                            <label>
-                                <input type="checkbox" id="loop_exit_200"> End Loop when http response code is not 200
-                            </label>
-                        </div>
-
-                    </div>
-                </div>
-
-                <div class="panel panel-default">
-                    <div class="panel-heading">Cookie options</div>
-                    <div class="panel-body">
-                        <p>Http Cookies received by background request may interfere with the forground requests.
-                            <br>If you want to ignore certain cookies enter names of cookies to ignore one per line</p>
-                        <textarea rows="3" id="cookie_ignore"></textarea>
-                    </div>
-                </div>
-
-                <div class="panel panel-default">
-                    <div class="panel-heading">Extra Header</div>
-                    <div class="panel-body">
-                        <p>You may define an extra http header to be sent with background requests
-                            <br>This may be useful if you sending background requests to your own server
-                            <br>and want the "let the server know" that these are special type of requets
-                            <br>Ignore this option if you not using this extension to communicate with your own server
-                        </p>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <input type="text" class="form-control" id="h_name"
-                                       placeholder='Name of extra header.'>
-
-                                <p class="text-muted">Extra Header Name</p>
-                            </div>
-                            <div class="col-md-6">
-                                <input type="text" class="form-control" id="h_val"
-                                       placeholder='Value of extra header'>
-
-                                <p class="text-muted">Extra Header Value</p>
-                            </div>
-                        </div>
-                        <p class="text-muted">Extra header only sent in background requests. Not send in foreground rules (page reloads)</p>
-                    </div>
-                </div>
-
-
-                <div class="panel panel-default">
-
-                    <div class="panel-heading" id="fg_rule">Foreground Page Reload Rule (Experimental feature)</div>
-                    <div class="panel-body">
-
-                        <p>Some websites put session idle time in the browser.
-                            <br>For such sites simple re-requesting url in background may not be enough.
-                            <br>Using this option a small javascript will be injected into every matching url, causing
-                            the page to auto-reload if idling more than set number of minutes.
-                            <br>For example settings this option to reload every 2 minutes will defeat site's own idle
-                            timer
-                            if their own times is set to log you out after 3 minutes of idling.</p>
-
-                        <div class="form-group">
-                            <label for="fg_trigger_uri">Auto-Reload Url. Match any url that start with this string</label>
-                            <input type="text" class="form-control" id="fg_trigger_uri"
-                                   placeholder="Any request that starts with this uri will be auto-reloading">
-
-                            <p class="text-info">Any url that starts with this url will be set to auto-refresh in set
-                                number of minutes
-                                <br>For example if you set this to "https://mybankportal.com/account/"
-                                <br>Then requests to https://mybankportal.com/account/details and
-                                https://mybankportal.com/account/whatever
-                                <br>will be set to auto-reload
-                            </p>
-
-                        </div>
-
-                        <div class="request_interval">
-                            <label for="fg_interval">Reload matching page after this many minutes of idling</label>
-                            <input type="text" class="form-control" style="width: 4em" id="fg_interval" size="3" maxlength="3">
-
-                            <p class="text-muted">Minimum 1 minute. Only whole numbers are allowed.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <p>
-                    <button type="button" id="save_rule">Save Rule</button>
-                    <button type="button" data-toggle="modal" data-target="#myModal" id="delete_rule">Delete Rule
-                    </button>
-                </p>
+    <div class="panel panel-default">
+        <div class="panel-heading">Rules</div>
+        <div class="panel-body">
+            <div class="list-group" id="rules_list">
 
             </div>
+            <button type="button" id="create_rule">
+                <span class="glyphicon glyphicon-plus"></span> Create New Rule
+            </button>
         </div>
     </div>
+</div>
 
-    <div class="footer">This Chrome&#8482; Extension is an Open Source project. <a href="https://github.com/snytkine/staying_alive" target="_github">Source Code</a> hosted on github. &copy; Dmitri Snytkine <span id="c_year"></span> </div>
+
+<div class="col-md-6">
+    <div class="well" id="no_rule">
+        Select a Rule to edit or<br>
+        Click <strong>"Create New Rule"</strong> button to add new rule
+    </div>
+    <div id="rule_form" class="rule_form hidden">
+
+        <div class="panel panel-default">
+
+            <div class="panel-heading">Rule Name</div>
+            <div class="panel-body">
+                <input type="hidden" id="rule_id" value="h23434">
+
+                <div class="form-group">
+                    <label for="rule_name">Rule Name</label>
+                    <input type="text" class="form-control" id="rule_name"
+                           placeholder="Assign a short name for this rule">
+
+                    <p class="text-muted">Rule will be identified by this name.</p>
+                </div>
+
+
+            </div>
+        </div>
+
+
+        <div class="panel panel-default">
+
+            <div class="panel-heading">Background Request Options</div>
+            <div class="panel-body">
+
+
+                <div class="form-group">
+                    <label for="trigger_uri">Trigger Url</label>
+                    <input type="text" class="form-control" id="trigger_uri"
+                           placeholder="Requesting this url from browser will trigger background request loop">
+
+                    <p class="text-muted">Requesting this url from browser will start the background request
+                        loop.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="loop_uri">Background Request Url</label>
+                    <input type="text" class="form-control" id="loop_uri"
+                           placeholder="This url will be requested in background">
+
+                    <p class="text-muted">Optional. If not specified will use Trigger Url</p>
+                </div>
+
+                <div class="request_interval">
+                    <label for="loop_interval">Request Interval (in minutes)</label>
+                    <input type="text" id="loop_interval" size="3" maxlength="3">
+
+                    <p class="text-muted">Minimum 1 minute. Only whole numbers are allowed.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="loop_uri">Cookie blocking options</label>
+                    <textarea rows="3" id="cookie_ignore"></textarea>
+
+                    <p class="text-muted">Http Cookies received by background request may interfere with the
+                        foreground requests.
+                        <br>Enter names of http cookies you want to ignore in background requests one per
+                        line<br>
+                        Leave blank if you don't need this option</p>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="panel panel-default">
+
+            <div class="panel-heading" id="fg_rule">Foreground Page Reload Rule (Experimental feature)</div>
+            <div class="panel-body">
+
+                <p>Some websites put session idle time in the browser.
+                    <br>For such sites simple re-requesting url in background may not be enough.
+                    <br>Using this option a small javascript will be injected into every matching url, causing
+                    the page to auto-reload if idling more than set number of minutes.
+                    <br>For example settings this option to reload every 2 minutes will defeat site's own idle
+                    timer
+                    if their own times is set to log you out after 3 minutes of idling.</p>
+
+                <div class="form-group">
+                    <label for="fg_trigger_uri">Auto-Reload Url. Match any url that start with this
+                        string</label>
+                    <input type="text" class="form-control" id="fg_trigger_uri"
+                           placeholder="Any request that starts with this uri will be auto-reloading">
+
+                    <p class="text-info">Any url that starts with this url will be set to auto-refresh in set
+                        number of minutes
+                        <br>For example if you set this to "https://mybankportal.com/account/"
+                        <br>Then requests to https://mybankportal.com/account/details and
+                        https://mybankportal.com/account/whatever
+                        <br>will be set to auto-reload
+                    </p>
+
+                </div>
+
+                <div class="request_interval">
+                    <label for="fg_interval">Reload matching page after this many minutes of idling</label>
+                    <input type="text" class="form-control" style="width: 4em" id="fg_interval" size="3"
+                           maxlength="3">
+
+                    <p class="text-muted">Minimum 1 minute. Only whole numbers are allowed.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">Loop Exit Options</div>
+            <div class="panel-body">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" id="loop_exit_tab"> End Loop when browser tab is closed
+                    </label>
+                </div>
+
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" id="loop_exit_200"> End Loop when http response code is not 200
+                    </label>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">Extra Header</div>
+            <div class="panel-body">
+                <p>You may define an extra http header to be sent with background requests
+                    <br>This may be useful if you sending background requests to your own server
+                    <br>and want the "let the server know" that these are special type of requets
+                    <br>Ignore this option if you not using this extension to communicate with your own server
+                </p>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" id="h_name"
+                               placeholder='Name of extra header.'>
+
+                        <p class="text-muted">Extra Header Name</p>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" id="h_val"
+                               placeholder='Value of extra header'>
+
+                        <p class="text-muted">Extra Header Value</p>
+                    </div>
+                </div>
+                <p class="text-muted">You may even override standard headers with this option. For example may
+                    define your own User-Agent header</p>
+            </div>
+        </div>
+
+
+        <p>
+            <button type="button" id="save_rule">Save Rule</button>
+            <button type="button" data-toggle="modal" data-target="#myModal" id="delete_rule">Delete Rule
+            </button>
+        </p>
+
+    </div>
+</div>
+
+<div class="col-md-3">
+
+    <div class="panel panel-default">
+        <div class="panel-heading">We need your help!</div>
+        <div class="panel-body">
+            <div class="list-group" id="hello_panel">
+                <p>This extension is FREE.<br>It's Open Source.<br>We never insert ads in your browser!</p>
+
+                <p>Please rate it five starts on Chrome store!</p>
+
+                <a href="https://chrome.google.com/webstore/detail/staying-alive/lhobbakbeomfcgjallalccfhfcgleinm"
+                   class="btn btn-primary btn-lg" target="_new"><span class="glyphicon glyphicon-thumbs-up"></span> Rate
+                    Us!</a>
+
+                <br><br>
+
+                <p>Spread the word on Twitter</p>
+
+                <a href="https://twitter.com/share" class="twitter-share-button"
+                   data-url="https://chrome.google.com/webstore/detail/staying-alive/lhobbakbeomfcgjallalccfhfcgleinm"
+                   data-counturl="https://chrome.google.com/webstore/detail/staying-alive/lhobbakbeomfcgjallalccfhfcgleinm"
+                   data-text="Check our this Chrome Extension. Never get logged out of sites again!" data-via="snytkine"
+                   data-size="large">Tweet</a>
+
+                <br><br>
+                <p>Like Us On Facebook</p>
+                <iframe src="https://www.facebook.com/plugins/like.php?href=https%3A%2F%2Fchrome.google.com%2Fwebstore%2Fdetail%2Fstaying-alive%2Flhobbakbeomfcgjallalccfhfcgleinm&amp;width=450&amp;height=35&amp;colorscheme=light&amp;layout=standard&amp;action=like&amp;show_faces=false&amp;send=false&amp;appId=203208779690064" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:450px; height:35px;" allowTransparency="true"></iframe>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+</div>
+<div class="footer"><p class="text-center">This Chrome&#8482; Extension is an Open Source project. <a
+        href="https://github.com/snytkine/staying_alive" target="mygithub">Source Code</a> hosted on github. &copy;
+    Dmitri Snytkine <span id="c_year">2013</span></p>
+</div>
 </div>
 <div id="saved_confirm" style="display: none;">Rule Saved</div>
 <!-- Confirmation Modal -->

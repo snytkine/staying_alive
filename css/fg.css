@@ -9,7 +9,7 @@
     display: block;
     position: fixed;
     top: 5px;
-    right: 5px;
+    left: 5px;
     width: 25%;
     min-width: 480px;
     font-size: 14px !important;
