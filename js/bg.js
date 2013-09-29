@@ -311,7 +311,7 @@ var updateForegroundRules = function (rule, tabId, uri) {
          *
          */
         fgRule.uri = uri;
-        fgRule.setNextReloadTime();
+        //fgRule.setNextReloadTime();
     } else {
         fgRule = new RunningForegroundRule(rule, tabId, uri);
         foregroundRules[id] = fgRule;

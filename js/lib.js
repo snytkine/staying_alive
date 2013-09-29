@@ -364,7 +364,13 @@ RunningRule.prototype.getNextRunTime = function () {
 
 // end RunningRule
 
-
+/**
+ *
+ * @param rule
+ * @param tabId
+ * @param uri
+ * @constructor
+ */
 var RunningForegroundRule = function (rule, tabId, uri) {
     this.rule = rule;
     this.tabId = parseInt(tabId, 10);
@@ -381,7 +387,7 @@ var RunningForegroundRule = function (rule, tabId, uri) {
      */
     this.initTime = (new Date()).getTime();
 
-    this.nextReloadTime = this.initTime + (rule.fgTimeout * 60000);
+    this.nextReloadTime = 0; //this.initTime + (rule.fgTimeout * 60000);
 }
 
 
