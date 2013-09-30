@@ -7,7 +7,8 @@
         "default_popup": "popup.html"
     },
     "options_page": "settings.html",
-    "description": "Never get logged our of any website due to idling!",
+    "name": "Staying Alive for Google Chrome™",
+    "description": "Never Get Logged Out of any website due to idling!",
     "icons": {
         "16": "img/16/icon_timed_reload_16.png",
         "48": "img/48/icon_timed_reload_48.png",
@@ -15,7 +16,6 @@
     },
     "content_security_policy": "script-src 'self' https://platform.twitter.com https://connect.facebook.net; object-src 'self'",
     "manifest_version": 2,
-    "name": "Staying Alive",
     "permissions": [ "tabs", "activeTab", "background", "cookies", "webRequest", "storage", "webRequestBlocking", "\u003Call_urls\u003E" ],
-    "version": "1.1"
+    "version": "1.4"
 }
