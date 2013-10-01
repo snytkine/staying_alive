@@ -732,6 +732,47 @@ var handleTabClose = function (tabId) {
 }
 
 /**
+ * Chrome calls inReplaced when user types in
+ * uri in browser and that uri is already cached
+ * Then Chrome just replaces the tab with a cached tab, often
+ * while use still types in the uri in browser.
+ *
+ * @param addedTab
+ * @param removedTab
+ */
+var handleTabReplaced = function (addedTab, removedTab) {
+    /**
+     * First remove background rule for removed tab
+     * then forebroundRule
+     */
+    handleTabClose(removedTab);
+
+    /**
+     * @todo what to do with addedTab?
+     *
+     */
+}
+
+var handleTabDetached = function (tabId, detachInfo) {
+    console.log("BG::handleTabDetached tabId: " + tabId + " oldWindow: " + detachInfo.oldWindowId);
+    /**
+     * @todo remove foregroundRule with this tabId
+     *
+     */
+}
+
+var handleTabAttached = function (tabId, attachInfo) {
+    console.log("BG::handleTabAttached tabId: " + tabId + " newWindow: " + attachInfo.newWindowId);
+
+    /**
+     * @todo update foregroundRule? Maybe not necessary since rule will still send a message before reload
+     * and that's when we will update the tabId with new tab
+     *
+     * @todo update background rule in runningProcs
+     */
+}
+
+/**
  * Get the object that represents opened popup window
  * (browserAction window)
  * If popup window not opened returns null
@@ -1009,6 +1050,9 @@ var initbgpage = function (reload) {
     //chrome.webRequest.onBeforeSendHeaders.addListener(requestListener, {urls:["<all_urls>"], types:oData[REQUEST_TYPES_KEY]}, ["requestHeaders", "blocking"]);
     chrome.tabs.onRemoved.addListener(handleTabClose);
     chrome.tabs.onUpdated.addListener(handleTabUpdate);
+    chrome.tabs.onReplaced.addListener(handleTabReplaced);
+    chrome.tabs.onDetached.addListener(handleTabDetached);
+    chrome.tabs.onAttached.addListener(handleTabAttached);
 }
 
 /**
@@ -1045,11 +1089,22 @@ chrome.runtime.onMessage.addListener(
                     updateForegroundRules(oRule, sender.tab.id, sender.tab.url);
                 }
             } else if (request.reloading) {
-                console.log("BG received message about tab reloading for ruleID: " + request.reloading);
+                console.log("BG received message about tab reloading for ruleID: " + request.reloading + " from tabId: " + sender.tab.id);
                 fgId = request.reloading;
                 if (foregroundRules.hasOwnProperty(fgId)) {
                     oRule = foregroundRules[fgId];
-                    d("BG::Received message from content script about reload the page. Rule: " + oRule.rule.ruleName);
+                    d("BG::Received message from content script about reload the page. Rule: " + oRule.rule.ruleName + " rule registered with tabId: " + oRule.tabId + " message sent from tab " + sender.tab.id);
+                    /**
+                     * @todo see if tabId passed in message is different from the one registered in RunningForegroundRule
+                     * If it is different then update RunningForegroundRule with new tabId
+                     * can just pass oRule.tabId to update() function
+                     * with every call and to just update tabId of rule.
+                     * This may be the case when tab was detached - the tabId will change then
+                     * but the countdown to reload is still running in content script in tab so tab
+                     * will send the message here. If we don't update tabId then we will have rule
+                     * in foregroundRules with different tabId, so we will not be able to
+                     * cancel rule properly.
+                     */
                     oRule.update();
                     /**
                      * @todo this is a problem
