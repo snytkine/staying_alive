@@ -152,6 +152,7 @@ var DomainRule = function (o) {
 
     this.fgUri = (o.fgUri) ? o.fgUri.toLocaleLowerCase() : null;
     this.fgTimeout = o.fgTimeout || 1;
+    this.beepEnabled = o.beepEnabled || false;
 }
 
 /**
@@ -175,6 +176,7 @@ DomainRule.prototype.update = function (o) {
 
     this.fgUri = (o.fgUri) ? o.fgUri.toLocaleLowerCase() : null;
     this.fgTimeout = o.fgTimeout || 1;
+    this.beepEnabled = o.beepEnabled || false;
 }
 
 
@@ -344,6 +346,10 @@ RunningRule.prototype.incrementCounter = function () {
     this.latestTime = ts;
 }
 
+RunningRule.prototype.setTabId = function (tabId) {
+    this.tabId = parseInt(tabId, 10);
+}
+
 /**
  * Get number of milliseconds till next rule will run
  * This will not be exact number since
@@ -355,8 +361,8 @@ RunningRule.prototype.incrementCounter = function () {
  * @returns {number}
  */
 RunningRule.prototype.getNextRunTime = function () {
-    var ret, ts = (new Date()).getTime();
-    var lastRun = (this.latestTime > 0) ? this.latestTime : this.initTime;
+    var lastRun, ret, ts = (new Date()).getTime();
+    lastRun = (this.latestTime > 0) ? this.latestTime : this.initTime;
     ret = lastRun + (this.rule.getInterval() * 60 * 1000) - ts;
 
     return ret;
@@ -601,6 +607,21 @@ RunningRules.prototype.getDomainRuleByTabId = function (tabId) {
     }
 
     return null;
+}
+
+
+RunningRules.prototype.updateTabId = function (oldTabId, newTabId) {
+    oldTabId = parseInt(oldTabId, 10);
+    newTabId = parseInt(oldTabId, 10);
+
+    for (var p in this.hashMap) {
+        if (this.hashMap.hasOwnProperty(p)) {
+            if (oldTabId === this.hashMap[p].tabId) {
+                this.hashMap[p].setTabId(newTabId);
+            }
+        }
+    }
+
 }
 // end RunningRules
 // END CLASSES DEFINITION

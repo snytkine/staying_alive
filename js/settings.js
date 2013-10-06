@@ -35,6 +35,20 @@ if (bgpage) {
 }
 
 /**
+ * jBeep
+ *
+ * Play WAV beeps easily in javascript!
+ * Tested on all popular browsers and works perfectly, including IE6.
+ *
+ * @date 10-19-2012
+ * @license MIT
+ * @author Everton (www.ultraduz.com.br)
+ * @version 1.0
+ * @params soundFile The .WAV sound path
+ */
+
+
+/**
  * Creates menu with rule names
  * as clickable items
  */
@@ -108,6 +122,7 @@ var setupRuleEditor = function (ruleId) {
         $("#loop_interval").val(rule.getInterval());
         $("#loop_exit_tab").prop('checked', !!rule.breakOnTabClose);
         $("#loop_exit_200").prop('checked', !!(rule.rule && rule.rule.ruleType && (rule.rule.ruleType == 'httpCodeIs') && rule.rule.ruleValue == '200'));
+        $("#reload_sound").prop('checked', !!rule.beepEnabled);
         // Foreground uri and timeout
         $("#fg_trigger_uri").val(rule.fgUri);
         $("#fg_interval").val(rule.fgTimeout);
@@ -182,6 +197,7 @@ var SettingsForm = function () {
     this.loopUri = $("#loop_uri").val();
     this.requestInterval = $("#loop_interval").val();
     this.breakOnTabClose = $("#loop_exit_tab").is(':checked');
+    this.beepEnabled = $("#reload_sound").is(':checked');
     this.removeCookies = null;
     this.extraHeader = null;
 
@@ -423,20 +439,42 @@ var showAlert = function (s, title) {
  * Setup listeners for buttons and menu items
  */
 $(function () {
-    var oUri = parseUri(window.location.href);
+    var jBeep, fbUrl, storeUrl, soundElem, oUri = parseUri(window.location.href), soundFile = chrome.extension.getURL("beep.wav");
+    soundElem = document.createElement("audio");
+    soundElem.setAttribute("src", soundFile);
+
+    /**
+     * Set url to chrome store 'rate/review' page using
+     * id of this extension. Notice id is not hard-coded - it will
+     * be the value of this extension id
+     *
+     */
+    fbUrl = 'https://www.facebook.com/plugins/like.php?href={store_url}&amp;width=450&amp;height=35&amp;colorscheme=light&amp;layout=standard&amp;action=like&amp;show_faces=false&amp;send=false&amp;appId=203208779690064';
+    storeUrl = 'https://chrome.google.com/webstore/detail/' + chrome.runtime.id;
+    document.getElementById("rate_us").href = storeUrl + '/reviews';
+    $("#twtr").attr('data-url', storeUrl).attr('data-counturl', storeUrl);
+    fbUrl = fbUrl.replace('{store_url}', encodeURIComponent(storeUrl));
+    console.log("fbUrl: " + fbUrl);
+    $("#my_fb_if").attr('src', fbUrl);
+
+
     $("#save_rule").click(saveFormValues);
     $("#confirm_delete").click(function () {
         deleteRule();
         $('#myModal').modal('hide')
     });
 
-    $("#create_rule").click(setupNewRuleEditor)
+    $("#create_rule").click(setupNewRuleEditor);
 
     $("#rules_list").delegate("a.list-group-item", "click", function () {
         var id = $(this).attr("id");
         $("#rule_form").removeClass("hidden");
         $("#no_rule").addClass("hidden");
         setupRuleEditor(id);
+    });
+
+    $("#sound_test").click(function () {
+        soundElem.play();
     });
 
     loadRules();

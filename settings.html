@@ -57,7 +57,7 @@
                     <input type="text" class="form-control" id="rule_name"
                            placeholder="Assign a short name for this rule">
 
-                    <p class="text-muted">Rule will be identified by this name.</p>
+                    <p class="text-info">Rule will be identified by this name.</p>
                 </div>
 
 
@@ -76,7 +76,7 @@
                     <input type="text" class="form-control" id="trigger_uri"
                            placeholder="Requesting this url from browser will trigger background request loop">
 
-                    <p class="text-muted">Requesting this url from browser will start the background request
+                    <p class="text-info">Requesting this url from browser will start the background request
                         loop.</p>
                 </div>
 
@@ -85,21 +85,21 @@
                     <input type="text" class="form-control" id="loop_uri"
                            placeholder="This url will be requested in background">
 
-                    <p class="text-muted">Optional. If not specified will use Trigger Url</p>
+                    <p class="text-info">Optional. If not specified will use Trigger Url</p>
                 </div>
 
                 <div class="request_interval">
                     <label for="loop_interval">Request Interval (in minutes)</label>
                     <input type="text" id="loop_interval" size="3" maxlength="3">
 
-                    <p class="text-muted">Minimum 1 minute. Only whole numbers are allowed.</p>
+                    <p class="text-info">Minimum 1 minute. Only whole numbers are allowed.</p>
                 </div>
 
                 <div class="form-group">
                     <label for="loop_uri">Cookie blocking options</label>
                     <textarea rows="3" id="cookie_ignore"></textarea>
 
-                    <p class="text-muted">Http Cookies received by background request may interfere with the
+                    <p class="text-info">Http Cookies received by background request may interfere with the
                         foreground requests.
                         <br>Enter names of http cookies you want to ignore in background requests one per
                         line<br>
@@ -142,9 +142,16 @@
                     <label for="fg_interval">Reload matching page after this many minutes of idling</label>
                     <input type="text" class="form-control" style="width: 4em" id="fg_interval" size="3"
                            maxlength="3">
-
-                    <p class="text-muted">Minimum 1 minute. Only whole numbers are allowed.</p>
+                    <p class="text-info">Minimum 1 minute. Only whole numbers are allowed.</p>
                 </div>
+
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" id="reload_sound"> Play short beep 10 seconds before reloading page.
+                    </label>
+                    <button type="button" class="btn btn-info btn-sm" id="sound_test">Sound test</button>
+                </div>
+
             </div>
         </div>
 
@@ -180,16 +187,16 @@
                         <input type="text" class="form-control" id="h_name"
                                placeholder='Name of extra header.'>
 
-                        <p class="text-muted">Extra Header Name</p>
+                        <p class="text-info">Extra Header Name</p>
                     </div>
                     <div class="col-md-6">
                         <input type="text" class="form-control" id="h_val"
                                placeholder='Value of extra header'>
 
-                        <p class="text-muted">Extra Header Value</p>
+                        <p class="text-info">Extra Header Value</p>
                     </div>
                 </div>
-                <p class="text-muted">You may even override standard headers with this option. For example may
+                <p class="text-info">You may even override standard headers with this option. For example may
                     define your own User-Agent header</p>
             </div>
         </div>
@@ -214,7 +221,7 @@
 
                 <p>Please rate it five starts on Chrome store!</p>
 
-                <a href="https://chrome.google.com/webstore/detail/staying-alive-for-google/lhobbakbeomfcgjallalccfhfcgleinm/reviews"
+                <a id="rate_us" href=""
                    class="btn btn-primary btn-lg" target="_new"><span class="glyphicon glyphicon-thumbs-up"></span> Rate
                     Us!</a>
 
@@ -222,16 +229,16 @@
 
                 <p>Spread the word on Twitter</p>
 
-                <a href="https://twitter.com/share" class="twitter-share-button"
-                   data-url="https://chrome.google.com/webstore/detail/staying-alive/lhobbakbeomfcgjallalccfhfcgleinm"
-                   data-counturl="https://chrome.google.com/webstore/detail/staying-alive/lhobbakbeomfcgjallalccfhfcgleinm"
+                <a id="twtr" href="https://twitter.com/share" class="twitter-share-button"
+                   data-url=""
+                   data-counturl=""
                    data-text="Check our this Chrome Extension. Never get logged out of sites due to idling again!" data-via="snytkine"
                    data-size="large">Tweet</a>
 
                 <br><br>
 
                 <p>Like Us On Facebook</p>
-                <iframe src="https://www.facebook.com/plugins/like.php?href=https%3A%2F%2Fchrome.google.com%2Fwebstore%2Fdetail%2Fstaying-alive%2Flhobbakbeomfcgjallalccfhfcgleinm&amp;width=450&amp;height=35&amp;colorscheme=light&amp;layout=standard&amp;action=like&amp;show_faces=false&amp;send=false&amp;appId=203208779690064"
+                <iframe id="my_fb_if" src="https://www.facebook.com/plugins/like.php?href=https%3A%2F%2Fchrome.google.com%2Fwebstore%2Fdetail%2Fstaying-alive%2Flhobbakbeomfcgjallalccfhfcgleinm&amp;width=450&amp;height=35&amp;colorscheme=light&amp;layout=standard&amp;action=like&amp;show_faces=false&amp;send=false&amp;appId=203208779690064"
                         scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:450px; height:35px;"
                         allowTransparency="true"></iframe>
             </div>
@@ -286,6 +293,7 @@
         </div>
     </div>
 </div>
+
 
 </body>
 

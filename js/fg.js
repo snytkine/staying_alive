@@ -39,13 +39,21 @@
 
     var isCancelled = false,
         ruleId,
+        soundEnabled = false,
         init,
         showCountdownAlert,
         stopReload,
         startCountdownToAlert,
         myInner,
         alertDiv,
+        jBeep,
+        soundElem,
+        soundFile,
         startCountdownAlert;
+
+    soundFile = chrome.extension.getURL("beep.wav");
+    soundElem = document.createElement("audio");
+    soundElem.setAttribute("src", soundFile);
 
     /**
      * Start counting down number of seconds
@@ -80,13 +88,18 @@
      *
      */
     startCountdownAlert = function updateCounter(s) {
+
         var seconds = (s || s === 0) ? s : 29;
+
         if (seconds >= 0) {
             setTimeout(function () {
                 var counter = document.getElementById("session_live_reloader_countdown");
                 if (counter) {
                     if (seconds < 11) {
                         counter.style.backgroundColor = "#d9534f";
+                        if (soundEnabled && seconds === 10) {
+                            soundElem.play();
+                        }
                     } else {
                         counter.style.backgroundColor = "#999999";
                     }
@@ -111,6 +124,14 @@
                     window.location.reload(true);
                 });
 
+                /**
+                 * Hide alert div - page will reload
+                 * But it case there is some problem with sending and receiving message
+                 * then reload will not happen, but at least we will not be
+                 * stuck with showing the alert div with counter stuck on 0
+                 *
+                 */
+                alertDiv.style.display = "none";
             }
         }
     }
@@ -187,7 +208,8 @@
             if (response && response.fgRule) {
                 initInterval = parseInt(response.fgRule.reloadVal, 10);
                 ruleId = response.fgRule.ruleId;
-                console.log("Received ruleId: " + ruleId + " timer: " + initInterval);
+                soundEnabled = response.fgRule.beepEnabled;
+                console.log("Received ruleId: " + ruleId + " timer: " + initInterval + " beepEnabled: " + soundEnabled);
                 if (initInterval) {
                     /**
                      * Subtract 30 seconds

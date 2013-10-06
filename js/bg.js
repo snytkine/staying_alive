@@ -741,24 +741,21 @@ var handleTabClose = function (tabId) {
  * @param removedTab
  */
 var handleTabReplaced = function (addedTab, removedTab) {
+    console.log("Handling replaced tab. Removed tabId: " + removedTab + " added tabId: " + addedTab);
     /**
-     * First remove background rule for removed tab
-     * then forebroundRule
-     */
-    handleTabClose(removedTab);
-
-    /**
-     * @todo what to do with addedTab?
+     * For foregroundRules must just remove the removedTab
+     * because removedTab is gone.
      *
+     * For backgroundRules if rule exists for removedTab
+     * update it with addedTab
      */
+    runningProcs.updateTabId(removedTab, addedTab);
+    removeForegroundRuleByTabId(removedTab);
 }
 
 var handleTabDetached = function (tabId, detachInfo) {
     console.log("BG::handleTabDetached tabId: " + tabId + " oldWindow: " + detachInfo.oldWindowId);
-    /**
-     * @todo remove foregroundRule with this tabId
-     *
-     */
+
 }
 
 var handleTabAttached = function (tabId, attachInfo) {
@@ -769,6 +766,16 @@ var handleTabAttached = function (tabId, attachInfo) {
      * and that's when we will update the tabId with new tab
      *
      * @todo update background rule in runningProcs
+     */
+
+    /**
+     * @todo remove foregroundRule with this tabId? Most of the time detached tab
+     * is then attached to new window or becomes the new window or attached back
+     * in most cases the tabId does not change but sometimes it does.
+     * We need a way to query the content script in tab (by tabId)
+     * and then get response with id of foreground rule.
+     * Or pass the function that will update foregroundRule[ruleId].tabId
+     *
      */
 }
 
@@ -1085,7 +1092,7 @@ chrome.runtime.onMessage.addListener(
                 oRule = getForegroundRuleForUrl(sender.tab.url);
                 if (oRule) {
                     console.log("Foreground Rule for " + sender.tab.url + " found. " + oRule.ruleName);
-                    sendResponse({fgRule: { reloadVal: oRule.fgTimeout, ruleId: oRule.id}});
+                    sendResponse({fgRule: { reloadVal: oRule.fgTimeout, ruleId: oRule.id, beepEnabled: oRule.beepEnabled}});
                     updateForegroundRules(oRule, sender.tab.id, sender.tab.url);
                 }
             } else if (request.reloading) {
