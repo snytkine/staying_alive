@@ -34,19 +34,6 @@ if (bgpage) {
     d("NO Background page");
 }
 
-/**
- * jBeep
- *
- * Play WAV beeps easily in javascript!
- * Tested on all popular browsers and works perfectly, including IE6.
- *
- * @date 10-19-2012
- * @license MIT
- * @author Everton (www.ultraduz.com.br)
- * @version 1.0
- * @params soundFile The .WAV sound path
- */
-
 
 /**
  * Creates menu with rule names
@@ -284,11 +271,10 @@ var showSaved = function (s) {
  * Then persist DOMAIN_RULES array to storage
  */
 var saveFormValues = function () {
-    var aRules = bgpage.DOMAIN_RULES;
-    var i, updated = false;
+    var oFormVals, i, updated = false, aRules = bgpage.DOMAIN_RULES;
     d("Saving form");
     try {
-        var oFormVals = new SettingsForm();
+        oFormVals = new SettingsForm();
     } catch (e) {
         showAlert(e.message + "<br>Rule NOT Saved\n");
         return;
@@ -355,8 +341,8 @@ var saveFormValues = function () {
  * save new array to storage
  */
 var deleteRule = function () {
-    var aRules = bgpage.DOMAIN_RULES;
-    var i, id, updated = false;
+    var i, id, updated = false, aRules = bgpage.DOMAIN_RULES;
+
     id = $("#rule_id").val();
     d("Deleting Rule " + id);
     d("Number of rules before delete: " + bgpage.DOMAIN_RULES.length);
@@ -384,6 +370,7 @@ var clearEditor = function () {
     $("input").val("");
     $("textarea").val("");
     $("input:checkbox").prop('checked', false);
+    $("#power_saver").prop('checked', bgpage.mySettings && bgpage.mySettings[DISABLE_POWER_SAVING]);
 }
 
 
@@ -439,7 +426,7 @@ var showAlert = function (s, title) {
  * Setup listeners for buttons and menu items
  */
 $(function () {
-    var jBeep, fbUrl, storeUrl, soundElem, oUri = parseUri(window.location.href), soundFile = chrome.extension.getURL("beep.wav");
+    var fbUrl, storeUrl, soundElem, oUri = parseUri(window.location.href), soundFile = chrome.extension.getURL("beep.wav");
     soundElem = document.createElement("audio");
     soundElem.setAttribute("src", soundFile);
 
@@ -473,12 +460,42 @@ $(function () {
         setupRuleEditor(id);
     });
 
+    /**
+     * Play beep sound on click
+     */
     $("#sound_test").click(function () {
         soundElem.play();
     });
 
+    /**
+     * If power settings not supported by this chrome
+     * then hide power settings option block
+     */
+    if (!chrome.power && !chrome.experimental.power) {
+        console.log("POWER SETTING option not present in this version of chrome");
+        $("#power_option").addClass("hidden");
+    } else {
+        /**
+         * Set checkbox state to 'checked' if value is true in stored setting
+         */
+        $("#power_saver").prop('checked', bgpage.mySettings && bgpage.mySettings[DISABLE_POWER_SAVING]);
+        $("#power_saver").click(function () {
+            var val;
+            val = $(this).is(':checked');
+            console.log("Power Setting is checked: " + val);
+            bgpage.togglePowerSavings(val);
+            showSaved("Power Saving option saved");
+        });
+    }
+
     loadRules();
 
+    /**
+     * If rule id passed to the settings page in the url
+     * in the form of ?id=someid
+     * then load the rule for that id
+     * into the editor
+     */
     if (oUri && oUri['queryKey'] && oUri['queryKey']['id']) {
         $("#rule_form").removeClass("hidden");
         $("#no_rule").addClass("hidden");

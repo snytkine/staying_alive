@@ -23,8 +23,35 @@
  */
 
 var STORAGE = chrome.storage.local;
+/**
+ * Name of key in local storage
+ * that will hold array of rules
+ * @type {string}
+ */
 var STORAGE_KEY = "staying_alive_rules";
+/**
+ * Name of key in local storage that will hold
+ * settings object
+ * @type {string}
+ */
+var SETTINGS_KEY = "staying_alive_settings";
+/**
+ * Name of key in the settings object
+ * that holds the value of power settings
+ * @type {string}
+ */
+var DISABLE_POWER_SAVING = "ps";
+/**
+ * Title to show on browser action badge
+ * @type {string}
+ */
 var BADGE_TITLE = "Staying Alive";
+/**
+ * Title to show on browser badge
+ * when power setting is disabled
+ * @type {string}
+ */
+var BADGE_POWER_SETTINGS_OFF = "System stays awake"
 
 /**
  * Log debug message to console
@@ -104,16 +131,55 @@ function getStoredItem() {
     try {
         return JSON.parse(localStorage.getItem(STORAGE_KEY))
     } catch (e) {
+        console.log("UNABLE TO GET STORED ITEMS");
     }
+
     return null
 }
 
-function persist(value, f) {
+/**
+ * Get settings from storage
+ * it is stored as json string, so get the string
+ * and parse to object.
+ *
+ * @returns {{}}
+ */
+var getSettings = function getSettings() {
+    var ret = {}, s = null;
+
+    try {
+        s = localStorage.getItem(SETTINGS_KEY);
+
+        if (typeof s === 'string' && s.length > 0) {
+            console.log("settings string from storage: " + s);
+
+            ret = JSON.parse(s);
+        } else {
+            console.log("No stored object for SETTINGS_KEY");
+        }
+    } catch (e) {
+        console.log("UNABLE TO GET STORED SETTINGS");
+    }
+
+    return ret;
+}
+
+/**
+ * Save item to local storage.
+ *
+ * @param value
+ * @param callback f if provided the callback function will be run after item saved in storage
+ * @param string key optional. If not provided then value of STORAGE_KEY is used
+ */
+function persist(value, key, f) {
 
     if (!value) {
         value = ""
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
+
+    key = key || STORAGE_KEY;
+
+    localStorage.setItem(key, JSON.stringify(value))
     if (f && typeof f === 'function') {
         f();
     }

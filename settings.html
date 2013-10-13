@@ -142,6 +142,7 @@
                     <label for="fg_interval">Reload matching page after this many minutes of idling</label>
                     <input type="text" class="form-control" style="width: 4em" id="fg_interval" size="3"
                            maxlength="3">
+
                     <p class="text-info">Minimum 1 minute. Only whole numbers are allowed.</p>
                 </div>
 
@@ -212,6 +213,25 @@
 </div>
 
 <div class="col-md-3">
+    <div class="panel panel-default" id="power_option">
+        <div class="panel-heading">System Settings</div>
+        <div class="panel-body">
+
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" id="power_saver"> Disable power saving mode
+                </label>
+
+                <p class="text-info">Prevent the computer from going into hybernation when there are scheduled background or foreground page reloads.
+                </p>
+
+                <p class="text-info">The background color of the counter in the extension's browser badge
+                    will be green when power savings mode is disabled.
+                </p>
+            </div>
+
+        </div>
+    </div>
 
     <div class="panel panel-default">
         <div class="panel-heading">We need your help!</div>
@@ -232,13 +252,15 @@
                 <a id="twtr" href="https://twitter.com/share" class="twitter-share-button"
                    data-url=""
                    data-counturl=""
-                   data-text="Check our this Chrome Extension. Never get logged out of sites due to idling again!" data-via="snytkine"
+                   data-text="Check our this Chrome Extension. Never get logged out of sites due to idling again!"
+                   data-via="snytkine"
                    data-size="large">Tweet</a>
 
                 <br><br>
 
                 <p>Like Us On Facebook</p>
-                <iframe id="my_fb_if" src="https://www.facebook.com/plugins/like.php?href=https%3A%2F%2Fchrome.google.com%2Fwebstore%2Fdetail%2Fstaying-alive%2Flhobbakbeomfcgjallalccfhfcgleinm&amp;width=450&amp;height=35&amp;colorscheme=light&amp;layout=standard&amp;action=like&amp;show_faces=false&amp;send=false&amp;appId=203208779690064"
+                <iframe id="my_fb_if"
+                        src="https://www.facebook.com/plugins/like.php?href=https%3A%2F%2Fchrome.google.com%2Fwebstore%2Fdetail%2Fstaying-alive%2Flhobbakbeomfcgjallalccfhfcgleinm&amp;width=450&amp;height=35&amp;colorscheme=light&amp;layout=standard&amp;action=like&amp;show_faces=false&amp;send=false&amp;appId=203208779690064"
                         scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:450px; height:35px;"
                         allowTransparency="true"></iframe>
             </div>

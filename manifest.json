@@ -17,6 +17,6 @@
     "web_accessible_resources": ["beep.wav"],
     "content_security_policy": "script-src 'self' https://platform.twitter.com https://connect.facebook.net; object-src 'self'",
     "manifest_version": 2,
-    "permissions": [ "tabs", "activeTab", "background", "cookies", "webRequest", "storage", "webRequestBlocking", "\u003Call_urls\u003E" ],
-    "version": "1.4"
+    "permissions": [ "tabs", "activeTab", "background", "cookies", "webRequest", "storage", "power", "webRequestBlocking", "\u003Call_urls\u003E" ],
+    "version": "1.5"
 }

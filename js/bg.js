@@ -80,7 +80,7 @@
  has counter, nextReloadTime, tabId
  */
 
-var DOMAIN_RULES = [], foregroundRules = {}, runningProcs = new RunningRules();
+var DOMAIN_RULES = [], foregroundRules = {}, mySettings = {}, runningProcs = new RunningRules();
 
 /**
  * Send the message to content script that is running
@@ -136,6 +136,49 @@ var getForegroundRulesCount = function () {
     }
 
     return i;
+}
+
+/**
+ * Save the value of power savings setting
+ * into storage
+ * and also update the background color of badge
+ * and title of the badge.
+ * This function will be called from settings page
+ * and in the future may be called from popup page.
+ *
+ * @var disable if true set the power savings to 'system'
+ * otherwise remove power savings setting and set back
+ * to system default.
+ */
+var togglePowerSavings = function togglePowerSavings(disable) {
+    var useOldApi = !chrome.power;
+
+    disable = !!disable;
+
+    if (useOldApi && !chrome.experimental.power) {
+        console.log("ERROR: No chrome.power and no chrome.experimental.power");
+
+        return false;
+
+    }
+
+    if (!disable) {
+        (useOldApi ? chrome.experimental.power : chrome.power).releaseKeepAwake();
+    } else {
+        if (useOldApi) {
+            chrome.experimental.power.requestKeepAwake(function () {
+            });
+        } else {
+            chrome.power.requestKeepAwake('system');
+        }
+    }
+
+    mySettings[DISABLE_POWER_SAVING] = disable;
+    persist(mySettings, SETTINGS_KEY);
+    updateBrowserBadge();
+
+    return true;
+
 }
 
 /**
@@ -259,9 +302,14 @@ var getForegroundRuleForUrl = function (uri) {
 
 /**
  * Update the value of counter on browser badge
+ * Update background - blue if power settings disabled
+ * or red for default
+ * Update Title (text that show on hover over button)
+ * When power settings are disable Title will show "System stays awake"
+ * otherwise show the name of extension - from manifest
  */
 var updateBrowserBadge = function () {
-    var e, counter = 0;
+    var e, manifest, counter = 0;
     counter = runningProcs.size();
     for (e in foregroundRules) {
         if (foregroundRules.hasOwnProperty(e)) {
@@ -278,6 +326,15 @@ var updateBrowserBadge = function () {
     d("Counter of running rules: " + counter);
 
     chrome.browserAction.setBadgeText({text: counter});
+
+    if (mySettings[DISABLE_POWER_SAVING]) {
+        chrome.browserAction.setBadgeBackgroundColor({ color: "#0000FF" });
+        chrome.browserAction.setTitle({ title: BADGE_POWER_SETTINGS_OFF});
+    } else {
+        chrome.browserAction.setBadgeBackgroundColor({ color: "#FF0000" });
+        manifest = chrome.runtime.getManifest();
+        chrome.browserAction.setTitle({ title: manifest.name});
+    }
 }
 
 
@@ -818,7 +875,11 @@ var getPopupView = function () {
 var initbgpage = function (reload) {
 
 
-    var j, stored = getStoredItem();
+    var j, stored = getStoredItem(), mySettings = getSettings();
+
+    if (typeof mySettings !== 'object') {
+        mySettings = {};
+    }
 
     if (stored && (typeof stored === 'object') && stored.length > 0) {
         d("Setting DOMAIN FULES from storage");
