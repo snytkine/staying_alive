@@ -67,7 +67,7 @@
         }
 
         if (t < 30) {
-            throw new Error("Muminum value of timeout is 30 seconds. Passed: " + t);
+            throw new Error("Minimum value of timeout is 30 seconds. Passed: " + t);
         }
 
         /**
@@ -92,24 +92,31 @@
         var seconds = (s || s === 0) ? s : 29;
 
         if (seconds >= 0) {
-            setTimeout(function () {
-                var counter = document.getElementById("session_live_reloader_countdown");
-                if (counter) {
-                    if (seconds < 11) {
-                        counter.style.backgroundColor = "#d9534f";
-                        if (soundEnabled && seconds === 10) {
-                            soundElem.play();
+            if (!isCancelled && alertDiv.style.display !== "none") {
+                setTimeout(function () {
+                    var counter = document.getElementById("session_live_reloader_countdown");
+                    if (counter) {
+                        if (seconds < 11) {
+                            counter.style.backgroundColor = "#d9534f";
+                            /**
+                             * Important to check (alertDiv.style.display !== "none")
+                             * because when user clicks on "Wait 1 minute" the alert div is hidden
+                             * but this counter is still running to the end!
+                             */
+                            if (!isCancelled && soundEnabled && (seconds === 10) && (alertDiv.style.display !== "none")) {
+                                soundElem.play();
+                            }
+                        } else {
+                            counter.style.backgroundColor = "#999999";
                         }
-                    } else {
-                        counter.style.backgroundColor = "#999999";
-                    }
 
-                    counter.innerText = seconds;
-                }
-                updateCounter(seconds - 1);
-            }, 1000);
+                        counter.innerText = seconds;
+                    }
+                    updateCounter(seconds - 1);
+                }, 1000);
+            }
         } else {
-            if (alertDiv.style.display !== "none" && !isCancelled) {
+            if (!isCancelled && alertDiv.style.display !== "none") {
                 /**
                  * Reload page
                  * but first notify background process
@@ -165,7 +172,12 @@
             alertDiv.style.display = "none";
             /**
              * Re-schedule alert to reappear in 1 minute
-             * Notify the backbround process about this extra minute added
+             * Notify the background process about this extra minute added
+             *
+             * !IMPORTANT
+             * The original reload
+             * countdown timer still running it's just that
+             * alert div is not visible now.
              */
                 //chrome.runtime.sendMessage({ruleId: ruleId, updateTime: 90});
 
