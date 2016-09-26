@@ -194,7 +194,7 @@
 
         console.log("Initialized content script");
 
-        alertDiv = document.createElement("div");
+        /*alertDiv = document.createElement("div");
         alertDiv.id = "ext_session_alive_reload_prompt";
         alertDiv.style.display = "none";
         myInner = '<div><div>To Keep Your Session Active<br>page will reload in <span id="session_live_reloader_countdown">30</span> seconds';
@@ -206,7 +206,7 @@
 
         document.getElementById("ext_session_alive_reload_cancel").addEventListener("click", function () {
             stopReload();
-        });
+        });*/
 
         /**
          * Use message passing to pass message
